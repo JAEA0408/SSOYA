@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { fetchSongs, addSong, updateSong, deleteSong, setAllSongs, setSong } from "./firebase";
 import * as XLSX from "xlsx";
 
-const ADMIN_PW = "admin1234";
+const ADMIN_PW = "Ehelsdlek";
 const ALL_TAGS = ["JPOP", "KPOP", "HELL", "연습곡", "신남", "슬픔"];
 const TAG_COLORS = {
   JPOP: "#3b82f6", KPOP: "#10b981", HELL: "#ef4444",
