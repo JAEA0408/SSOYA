@@ -39,7 +39,7 @@ function pickCover(results) {
 }
 
 // ─── iTunes API: 앨범커버 1개 가져오기 (일괄 검색용) ───
-async function fetchCoverLastFm(title, artist) {
+async function fetchCover(title, artist) {
   try {
     const cleanTitle = cleanQuery(title);
     const cleanArtist = cleanQuery(artist);
@@ -76,7 +76,7 @@ async function fetchCoverLastFm(title, artist) {
 }
 
 // ─── iTunes API: 여러 결과 가져오기 (개별 검색 폼용) ───
-async function searchCoversLastFm(title, artist) {
+async function searchCovers(title, artist) {
   try {
     const cleanTitle = cleanQuery(title);
     const cleanArtist = cleanQuery(artist);
@@ -281,7 +281,7 @@ function AdminPanel({ onLogout }) {
     load();
   };
 
-  // ─── 앨범커버 일괄 자동매칭 (Last.fm) ───
+  // ─── 앨범커버 일괄 자동매칭 (iTunes) ───
   const handleBulkCover = async () => {
     const noCover = songs.filter((s) => !s.albumCover);
     if (noCover.length === 0) {
@@ -290,7 +290,7 @@ function AdminPanel({ onLogout }) {
     }
 
     const minutes = Math.ceil(noCover.length * 0.4 / 60);
-    if (!confirm(`앨범커버가 없는 ${noCover.length}곡을 Last.fm에서 자동 검색할까요?\n약 ${minutes}분 정도 걸려요.`)) return;
+    if (!confirm(`앨범커버가 없는 ${noCover.length}곡을 iTunes에서 자동 검색할까요?\n약 ${minutes}분 정도 걸려요.`)) return;
 
     stopCoverRef.current = false;
     let found = 0;
@@ -304,7 +304,7 @@ function AdminPanel({ onLogout }) {
       setCoverProgress({ current: i + 1, total: noCover.length, found, skipped, currentTitle: song.title });
 
       try {
-        const cover = await fetchCoverLastFm(song.title, song.artist);
+        const cover = await fetchCover(song.title, song.artist);
 
         if (cover) {
           // 찾자마자 바로 DB에 저장 (중지해도 이미 저장됨)
@@ -467,7 +467,7 @@ function SongForm({ initial, onSave, onCancel }) {
   const handleSearchCover = async () => {
     if (!title && !artist) return;
     setCoverLoading(true);
-    const results = await searchCoversLastFm(title, artist);
+    const results = await searchCovers(title, artist);
     setCoverResults(results);
     setCoverLoading(false);
   };
