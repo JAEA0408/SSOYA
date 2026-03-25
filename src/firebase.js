@@ -1,7 +1,8 @@
-// SSOYA Firebase DB 연결 설정
+// SSOYA Firebase DB + 인증 설정
 
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, get, set, push, remove, update } from "firebase/database";
+import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAyz7kFvcoNYH2PcDAhkEXaE_UXX1BB5G0",
@@ -15,7 +16,23 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
+const auth = getAuth(app);
 
+// ─── 인증 ───
+export async function adminLogin(email, password) {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  return userCredential.user;
+}
+
+export async function adminLogout() {
+  await signOut(auth);
+}
+
+export function getCurrentUser() {
+  return auth.currentUser;
+}
+
+// ─── DB 읽기 (누구나 가능) ───
 export async function fetchSongs() {
   try {
     const snapshot = await get(ref(db, "songs"));
@@ -28,6 +45,7 @@ export async function fetchSongs() {
   }
 }
 
+// ─── DB 쓰기 (로그인한 관리자만 가능) ───
 export async function addSong(songData) {
   const newRef = push(ref(db, "songs"));
   await set(newRef, songData);
