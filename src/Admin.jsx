@@ -5,41 +5,85 @@ import { fetchSongs, addSong, updateSong, deleteSong, setAllSongs, setSong, admi
 import * as XLSX from "xlsx";
 
 const ADMIN_EMAIL = "admin@ssoya.com";
+const LASTFM_KEY = "c1caacb58a87eacb83228ae1b47e58c9";
 const ALL_TAGS = ["JPOP", "KPOP", "HELL", "연습곡", "신남", "슬픔"];
 const TAG_COLORS = {
   JPOP: "#3b82f6", KPOP: "#10b981", HELL: "#ef4444",
   "연습곡": "#22c55e", "신남": "#f59e0b", "슬픔": "#6366f1",
 };
 
-async function searchCover(title, artist) {
-  try {
-    const q = encodeURIComponent(`${artist} ${title}`);
-    const r = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=5`);
-    const d = await r.json();
-    return (d.results || []).map((r) => ({
-      name: `${r.trackName} - ${r.artistName}`,
-      cover: r.artworkUrl100?.replace("100x100", "600x600") || r.artworkUrl100,
-      small: r.artworkUrl100,
-    }));
-  } catch { return []; }
-}
+function delay(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-// iTunes API에서 첫 번째 결과의 커버만 가져오기
-async function fetchFirstCover(title, artist) {
+// ─── Last.fm API: 앨범커버 1개 가져오기 (일괄 검색용) ───
+async function fetchCoverLastFm(title, artist) {
   try {
-    const q = encodeURIComponent(`${artist} ${title}`);
-    const r = await fetch(`https://itunes.apple.com/search?term=${q}&media=music&limit=1`);
-    const d = await r.json();
-    if (d.results && d.results.length > 0) {
-      return d.results[0].artworkUrl100?.replace("100x100", "600x600") || null;
+    // 1차: track.getInfo로 정확한 매칭 시도
+    const url1 = `https://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(title)}&api_key=${LASTFM_KEY}&format=json`;
+    const r1 = await fetch(url1);
+    const d1 = await r1.json();
+    const imgs1 = d1?.track?.album?.image;
+    if (imgs1 && imgs1.length > 0) {
+      const big = imgs1.find((i) => i.size === "extralarge") || imgs1[imgs1.length - 1];
+      if (big?.["#text"]) return big["#text"];
     }
+
+    // 2차: track.search로 검색 시도 (1차 실패 시)
+    const url2 = `https://ws.audioscrobbler.com/2.0/?method=track.search&track=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}&api_key=${LASTFM_KEY}&format=json&limit=1`;
+    const r2 = await fetch(url2);
+    const d2 = await r2.json();
+    const tracks = d2?.results?.trackmatches?.track;
+    if (tracks && tracks.length > 0) {
+      const t = tracks[0];
+      // 찾은 결과로 다시 track.getInfo
+      const url3 = `https://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(t.artist)}&track=${encodeURIComponent(t.name)}&api_key=${LASTFM_KEY}&format=json`;
+      const r3 = await fetch(url3);
+      const d3 = await r3.json();
+      const imgs3 = d3?.track?.album?.image;
+      if (imgs3 && imgs3.length > 0) {
+        const big = imgs3.find((i) => i.size === "extralarge") || imgs3[imgs3.length - 1];
+        if (big?.["#text"]) return big["#text"];
+      }
+    }
+
     return null;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-// 딜레이 함수 (API 속도 제한 방지)
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+// ─── Last.fm API: 여러 결과 가져오기 (개별 검색 폼용) ───
+async function searchCoversLastFm(title, artist) {
+  try {
+    const q = `${artist} ${title}`.trim();
+    const url = `https://ws.audioscrobbler.com/2.0/?method=track.search&track=${encodeURIComponent(q)}&api_key=${LASTFM_KEY}&format=json&limit=5`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const tracks = d?.results?.trackmatches?.track || [];
+
+    const results = [];
+    for (const t of tracks) {
+      try {
+        const infoUrl = `https://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(t.artist)}&track=${encodeURIComponent(t.name)}&api_key=${LASTFM_KEY}&format=json`;
+        const infoR = await fetch(infoUrl);
+        const infoD = await infoR.json();
+        const imgs = infoD?.track?.album?.image;
+        if (imgs && imgs.length > 0) {
+          const big = imgs.find((i) => i.size === "extralarge") || imgs[imgs.length - 1];
+          const small = imgs.find((i) => i.size === "medium") || imgs[0];
+          if (big?.["#text"]) {
+            results.push({
+              name: `${t.name} - ${t.artist}`,
+              cover: big["#text"],
+              small: small?.["#text"] || big["#text"],
+            });
+          }
+        }
+      } catch { /* 개별 에러는 무시 */ }
+    }
+    return results;
+  } catch {
+    return [];
+  }
 }
 
 export default function Admin() {
@@ -97,10 +141,8 @@ function AdminPanel({ onLogout }) {
   const [editId, setEditId] = useState(null);
   const [msg, setMsg] = useState(null);
   const [importProgress, setImportProgress] = useState(null);
-
-  // 앨범커버 일괄 검색 상태
-  const [coverProgress, setCoverProgress] = useState(null); // { current, total, found, skipped, currentTitle }
-  const stopCoverRef = useRef(false); // 중지 플래그
+  const [coverProgress, setCoverProgress] = useState(null);
+  const stopCoverRef = useRef(false);
 
   const load = async () => {
     setLoading(true);
@@ -113,7 +155,7 @@ function AdminPanel({ onLogout }) {
 
   const showMsg = (text, type = "success") => {
     setMsg({ text, type });
-    setTimeout(() => setMsg(null), 3000);
+    setTimeout(() => setMsg(null), 4000);
   };
 
   const handleDelete = async (id, title) => {
@@ -219,68 +261,46 @@ function AdminPanel({ onLogout }) {
     load();
   };
 
-  // ─── 앨범커버 일괄 자동매칭 ───
+  // ─── 앨범커버 일괄 자동매칭 (Last.fm) ───
   const handleBulkCover = async () => {
-    // 커버가 없는 곡만 필터
     const noCover = songs.filter((s) => !s.albumCover);
     if (noCover.length === 0) {
       showMsg("모든 곡에 이미 앨범커버가 있어요!");
       return;
     }
 
-    if (!confirm(`앨범커버가 없는 ${noCover.length}곡을 iTunes에서 자동 검색할까요?\n약 ${Math.ceil(noCover.length * 0.35 / 60)}분 정도 걸려요.`)) return;
+    const minutes = Math.ceil(noCover.length * 0.4 / 60);
+    if (!confirm(`앨범커버가 없는 ${noCover.length}곡을 Last.fm에서 자동 검색할까요?\n약 ${minutes}분 정도 걸려요.`)) return;
 
     stopCoverRef.current = false;
     let found = 0;
     let skipped = 0;
 
-    // 50곡 단위로 모아서 DB에 저장 (효율적)
-    let batch = {};
-    let batchCount = 0;
-
     for (let i = 0; i < noCover.length; i++) {
-      // 중지 버튼 눌렀으면 멈추기
-      if (stopCoverRef.current) {
-        // 남은 배치 저장
-        if (batchCount > 0) {
-          for (const [id, cover] of Object.entries(batch)) {
-            await updateSong(id, { albumCover: cover });
-          }
-        }
-        break;
-      }
+      // 중지 확인
+      if (stopCoverRef.current) break;
 
       const song = noCover[i];
       setCoverProgress({ current: i + 1, total: noCover.length, found, skipped, currentTitle: song.title });
 
-      const cover = await fetchFirstCover(song.title, song.artist);
+      try {
+        const cover = await fetchCoverLastFm(song.title, song.artist);
 
-      if (cover) {
-        batch[song.id] = cover;
-        batchCount++;
-        found++;
-      } else {
+        if (cover) {
+          // 찾자마자 바로 DB에 저장 (중지해도 이미 저장됨)
+          await updateSong(song.id, { albumCover: cover });
+          found++;
+        } else {
+          skipped++;
+        }
+      } catch (err) {
+        // 에러 나도 멈추지 않고 건너뜀
+        console.error(`커버 검색 실패: ${song.title}`, err);
         skipped++;
       }
 
-      // 50곡마다 DB에 저장
-      if (batchCount >= 50) {
-        for (const [id, cover] of Object.entries(batch)) {
-          await updateSong(id, { albumCover: cover });
-        }
-        batch = {};
-        batchCount = 0;
-      }
-
-      // API 속도 제한 방지 (0.3초 간격)
-      await delay(300);
-    }
-
-    // 마지막 남은 배치 저장
-    if (batchCount > 0) {
-      for (const [id, cover] of Object.entries(batch)) {
-        await updateSong(id, { albumCover: cover });
-      }
+      // API 속도 제한 방지 (0.35초 간격)
+      await delay(350);
     }
 
     const stopped = stopCoverRef.current;
@@ -294,8 +314,6 @@ function AdminPanel({ onLogout }) {
   };
 
   const s = { brd: "#e2e8f0", sub: "#64748b", acc: "#3b82f6", danger: "#ef4444", text: "#1e293b" };
-
-  // 커버 없는 곡 수
   const noCoverCount = songs.filter((s) => !s.albumCover).length;
 
   return (
@@ -315,14 +333,12 @@ function AdminPanel({ onLogout }) {
         </div>
       </div>
 
-      {/* 알림 */}
       {msg && (
         <div style={{ position: "fixed", top: "16px", right: "16px", background: msg.type === "error" ? "#fef2f2" : "#f0fdf4", color: msg.type === "error" ? "#ef4444" : "#16a34a", padding: "12px 20px", borderRadius: "12px", boxShadow: "0 4px 20px rgba(0,0,0,0.1)", fontSize: "14px", fontWeight: 600, zIndex: 999, border: `1px solid ${msg.type === "error" ? "#fecaca" : "#bbf7d0"}` }}>
           {msg.text}
         </div>
       )}
 
-      {/* CSV 가져오기 진행 */}
       {importProgress && (
         <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "32px", borderRadius: "16px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", zIndex: 999, textAlign: "center" }}>
           <div style={{ fontSize: "36px", marginBottom: "12px" }}>⏳</div>
@@ -331,7 +347,6 @@ function AdminPanel({ onLogout }) {
         </div>
       )}
 
-      {/* 앨범커버 일괄 검색 진행 */}
       {coverProgress && (
         <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "#fff", padding: "32px 28px", borderRadius: "16px", boxShadow: "0 20px 60px rgba(0,0,0,0.2)", zIndex: 999, textAlign: "center", maxWidth: "360px", width: "90%" }}>
           <div style={{ fontSize: "36px", marginBottom: "12px" }}>🎨</div>
@@ -339,7 +354,6 @@ function AdminPanel({ onLogout }) {
           <p style={{ fontSize: "24px", fontWeight: 800, color: "#3b82f6", marginBottom: "8px" }}>
             {coverProgress.current} / {coverProgress.total}
           </p>
-          {/* 진행 바 */}
           <div style={{ width: "100%", height: "8px", background: "#e2e8f0", borderRadius: "4px", marginBottom: "12px", overflow: "hidden" }}>
             <div style={{ width: `${(coverProgress.current / coverProgress.total) * 100}%`, height: "100%", background: "linear-gradient(90deg, #6366f1, #e879f9)", borderRadius: "4px", transition: "width 0.3s" }} />
           </div>
@@ -350,7 +364,7 @@ function AdminPanel({ onLogout }) {
             ✅ 찾음: {coverProgress.found} &nbsp; ❌ 못찾음: {coverProgress.skipped}
           </p>
           <button onClick={handleStopCover} style={{ padding: "8px 20px", borderRadius: "10px", background: "#ef4444", color: "#fff", border: "none", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-            ⏹️ 중지 (지금까지 결과 저장)
+            ⏹️ 중지 (지금까지 결과 저장됨)
           </button>
         </div>
       )}
@@ -373,7 +387,6 @@ function AdminPanel({ onLogout }) {
             {songs.map((song) => (
               <div key={song.id} style={{ background: "#fff", borderRadius: "12px", padding: "14px 16px", border: `1px solid ${s.brd}`, display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}>
                 <div style={{ display: "flex", gap: "10px", flex: 1, minWidth: 0, alignItems: "center" }}>
-                  {/* 앨범커버 미리보기 */}
                   {song.albumCover ? (
                     <img src={song.albumCover} alt="" style={{ width: "40px", height: "40px", borderRadius: "8px", objectFit: "cover", flexShrink: 0 }}
                       onError={(e) => { e.target.style.display = "none"; }} />
@@ -434,7 +447,7 @@ function SongForm({ initial, onSave, onCancel }) {
   const handleSearchCover = async () => {
     if (!title && !artist) return;
     setCoverLoading(true);
-    const results = await searchCover(title, artist);
+    const results = await searchCoversLastFm(title, artist);
     setCoverResults(results);
     setCoverLoading(false);
   };

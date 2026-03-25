@@ -96,10 +96,6 @@ export default function SSOYA() {
     setTimeout(() => { setSlotResult(chosen); setSlotRun(false); }, 2800);
   }, [sorted]);
 
-  const closeSlot = () => {
-    setSlotModal(false);
-  };
-
   const t = dark
     ? { bg: "#0f0f1a", card: "#1a1a2e", text: "#e2e8f0", sub: "#94a3b8", brd: "#2d2d44", acc: "#3b82f6", inBg: "#1a1a2e", inBrd: "#2d2d44", shd: "0 2px 12px rgba(0,0,0,0.4)", mod: "rgba(0,0,0,0.75)" }
     : { bg: "#f1f5f9", card: "#ffffff", text: "#1e293b", sub: "#64748b", brd: "#e2e8f0", acc: "#3b82f6", inBg: "#f8fafc", inBrd: "#d1d5db", shd: "0 2px 12px rgba(0,0,0,0.08)", mod: "rgba(0,0,0,0.5)" };
@@ -231,9 +227,8 @@ export default function SSOYA() {
         </button>
       )}
 
-      {/* 슬롯머신 모달 */}
       {slotModal && (
-        <div onClick={(e) => { if (e.target === e.currentTarget && !slotRun) closeSlot(); }} style={{ position: "fixed", inset: 0, background: t.mod, backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "20px" }}>
+        <div onClick={(e) => { if (e.target === e.currentTarget && !slotRun) setSlotModal(false); }} style={{ position: "fixed", inset: 0, background: t.mod, backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "20px" }}>
           <div style={{ background: t.card, borderRadius: "20px", padding: "28px 24px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,.3)", border: `1px solid ${t.brd}` }}>
             <div style={{ height: "120px", overflow: "hidden", borderRadius: "14px", background: dark ? "#0f0f1a" : "#f1f5f9", marginBottom: "18px", border: `1px solid ${t.brd}` }}>
               {slotRun ? (
@@ -260,7 +255,7 @@ export default function SSOYA() {
               <button onClick={startSlot} disabled={slotRun || sorted.length === 0} style={{ padding: "9px 22px", borderRadius: "12px", background: slotRun ? t.brd : "linear-gradient(135deg,#6366f1,#8b5cf6)", color: slotRun ? t.sub : "#fff", border: "none", fontSize: "13px", fontWeight: 600, cursor: slotRun ? "not-allowed" : "pointer" }}>
                 {slotRun ? "돌리는 중..." : slotResult ? "🔄 다시 돌리기" : "🎲 돌리기"}
               </button>
-              {!slotRun && <button onClick={closeSlot} style={{ padding: "9px 22px", borderRadius: "12px", background: "transparent", color: t.sub, border: `1px solid ${t.brd}`, fontSize: "13px", fontWeight: 500, cursor: "pointer" }}>닫기</button>}
+              {!slotRun && <button onClick={() => setSlotModal(false)} style={{ padding: "9px 22px", borderRadius: "12px", background: "transparent", color: t.sub, border: `1px solid ${t.brd}`, fontSize: "13px", fontWeight: 500, cursor: "pointer" }}>닫기</button>}
             </div>
           </div>
         </div>
