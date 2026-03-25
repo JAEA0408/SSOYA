@@ -55,8 +55,6 @@ export default function SSOYA() {
   const [slotModal, setSlotModal] = useState(false);
   const [slotResult, setSlotResult] = useState(null);
   const [slotRun, setSlotRun] = useState(false);
-  const [hlId, setHlId] = useState(null);
-  const refs = useRef({});
   const sortR = useRef(null);
 
   useEffect(() => { fetchSongs().then((d) => { setSongs(d); setLoading(false); }); }, []);
@@ -73,9 +71,6 @@ export default function SSOYA() {
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
-  useEffect(() => {
-    if (hlId) { const t = setTimeout(() => setHlId(null), 2200); return () => clearTimeout(t); }
-  }, [hlId]);
 
   const toggleLike = (id) => setLikes((p) => ({ ...p, [id]: !p[id] }));
   const toggleTag = (tag) => setSelTags((p) => p.includes(tag) ? p.filter((t) => t !== tag) : [...p, tag]);
@@ -103,13 +98,6 @@ export default function SSOYA() {
 
   const closeSlot = () => {
     setSlotModal(false);
-    if (slotResult) {
-      setHlId(slotResult.id);
-      setTimeout(() => {
-        const el = refs.current[slotResult.id];
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 100);
-    }
   };
 
   const t = dark
@@ -121,7 +109,6 @@ export default function SSOYA() {
   return (
     <div style={{ minHeight: "100vh", background: t.bg, color: t.text, fontFamily: "'Pretendard','Noto Sans KR',-apple-system,sans-serif", transition: "background .3s,color .3s" }}>
 
-      {/* 채널아트 배너 */}
       <div style={{ width: "100%", background: dark ? "#0f0f1a" : "#f1f5f9" }}>
         <img src="/logo.png" alt="SSOYA" style={{ width: "100%", height: "auto", display: "block", maxWidth: "1200px", margin: "0 auto" }} />
       </div>
@@ -187,7 +174,6 @@ export default function SSOYA() {
           </div>
         </div>
 
-        {/* 노래 리스트 */}
         {loading ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: t.sub }}>
             <div style={{ fontSize: "36px", marginBottom: "10px" }}>⏳</div>
@@ -208,8 +194,8 @@ export default function SSOYA() {
             {sorted.map((s, i) => {
               const bg = s.albumCover ? `url(${s.albumCover}) center/cover no-repeat` : COVERS[hi(s.id)];
               return (
-                <div key={s.id} ref={(el) => (refs.current[s.id] = el)} className="sc"
-                  style={{ background: t.card, borderRadius: "14px", overflow: "hidden", border: `1px solid ${t.brd}`, boxShadow: t.shd, animationDelay: `${Math.min(i, 20) * 0.02}s`, outline: "2px solid transparent", animation: hlId === s.id ? "hlBlink .5s ease 4" : undefined }}>
+                <div key={s.id} className="sc"
+                  style={{ background: t.card, borderRadius: "14px", overflow: "hidden", border: `1px solid ${t.brd}`, boxShadow: t.shd, animationDelay: `${Math.min(i, 20) * 0.02}s` }}>
                   <div style={{ display: "flex", minHeight: "110px" }}>
                     <div style={{ position: "relative", width: "110px", minWidth: "110px", height: "110px", background: bg, flexShrink: 0 }}>
                       <button className="hb" onClick={() => toggleLike(s.id)} style={{ position: "absolute", top: "5px", left: "5px", background: "rgba(0,0,0,.4)", backdropFilter: "blur(4px)", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "15px" }}>
@@ -245,10 +231,10 @@ export default function SSOYA() {
         </button>
       )}
 
+      {/* 슬롯머신 모달 */}
       {slotModal && (
         <div onClick={(e) => { if (e.target === e.currentTarget && !slotRun) closeSlot(); }} style={{ position: "fixed", inset: 0, background: t.mod, backdropFilter: "blur(5px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 200, padding: "20px" }}>
           <div style={{ background: t.card, borderRadius: "20px", padding: "28px 24px", maxWidth: "400px", width: "100%", textAlign: "center", boxShadow: "0 20px 60px rgba(0,0,0,.3)", border: `1px solid ${t.brd}` }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 700, marginBottom: "18px" }}>🎰 랜덤 선곡</h2>
             <div style={{ height: "120px", overflow: "hidden", borderRadius: "14px", background: dark ? "#0f0f1a" : "#f1f5f9", marginBottom: "18px", border: `1px solid ${t.brd}` }}>
               {slotRun ? (
                 <Slot songs={sorted} t={t} />
@@ -270,10 +256,9 @@ export default function SSOYA() {
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: t.sub, fontSize: "14px" }}>아래 버튼을 눌러 시작!</div>
               )}
             </div>
-            {slotResult && !slotRun && <p style={{ color: t.acc, fontWeight: 700, fontSize: "15px", marginBottom: "14px" }}>🎉 이 곡이야!</p>}
             <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
               <button onClick={startSlot} disabled={slotRun || sorted.length === 0} style={{ padding: "9px 22px", borderRadius: "12px", background: slotRun ? t.brd : "linear-gradient(135deg,#6366f1,#8b5cf6)", color: slotRun ? t.sub : "#fff", border: "none", fontSize: "13px", fontWeight: 600, cursor: slotRun ? "not-allowed" : "pointer" }}>
-                {slotRun ? "돌리는 중..." : slotResult ? "🔄 다시 돌리기" : "🎰 돌리기"}
+                {slotRun ? "돌리는 중..." : slotResult ? "🔄 다시 돌리기" : "🎲 돌리기"}
               </button>
               {!slotRun && <button onClick={closeSlot} style={{ padding: "9px 22px", borderRadius: "12px", background: "transparent", color: t.sub, border: `1px solid ${t.brd}`, fontSize: "13px", fontWeight: 500, cursor: "pointer" }}>닫기</button>}
             </div>
