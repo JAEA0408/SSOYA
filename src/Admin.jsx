@@ -24,13 +24,12 @@ function cleanQuery(str) {
     .trim();
 }
 
-// ─── iTunes API 단일 검색 헬퍼 (allorigins 프록시 경유) ───
+// ─── iTunes API 단일 검색 헬퍼 (corsproxy.io 경유) ───
 async function iTunesSearch(q, country) {
   const target = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5&country=${country}`;
-  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
+  const proxy = `https://corsproxy.io/?url=${encodeURIComponent(target)}`;
   const r = await fetch(proxy);
-  const wrapper = await r.json();
-  const d = JSON.parse(wrapper.contents);
+  const d = await r.json();
   return d.results || [];
 }
 
