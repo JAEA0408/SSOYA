@@ -5,7 +5,6 @@ import { fetchSongs, addSong, updateSong, deleteSong, setAllSongs, setSong, admi
 import * as XLSX from "xlsx";
 
 const ADMIN_EMAIL = "admin@ssoya.com";
-const LASTFM_KEY = "c1caacb58a87eacb83228ae1b47e58c9";
 const ALL_TAGS = ["JPOP", "KPOP", "HELL", "연습곡", "신남", "슬픔"];
 const TAG_COLORS = {
   JPOP: "#3b82f6", KPOP: "#10b981", HELL: "#ef4444",
@@ -14,36 +13,64 @@ const TAG_COLORS = {
 
 function delay(ms) { return new Promise((r) => setTimeout(r, ms)); }
 
-// ─── Last.fm API: 앨범커버 1개 가져오기 (일괄 검색용) ───
+// ─── 검색어 정제: 괄호/태그 제거 ───
+function cleanQuery(str) {
+  return str
+    .replace(/\(.*?\)/g, "")
+    .replace(/\[.*?\]/g, "")
+    .replace(/【.*?】/g, "")
+    .replace(/「.*?」/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// ─── iTunes API 단일 검색 헬퍼 (allorigins 프록시 경유) ───
+async function iTunesSearch(q, country) {
+  const target = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5&country=${country}`;
+  const proxy = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
+  const r = await fetch(proxy);
+  const wrapper = await r.json();
+  const d = JSON.parse(wrapper.contents);
+  return d.results || [];
+}
+
+function pickCover(results) {
+  if (!results.length) return null;
+  const art = results[0].artworkUrl100;
+  if (!art) return null;
+  return art.replace("100x100bb", "600x600bb");
+}
+
+// ─── iTunes API: 앨범커버 1개 가져오기 (일괄 검색용) ───
 async function fetchCoverLastFm(title, artist) {
   try {
-    // 1차: track.getInfo로 정확한 매칭 시도
-    const url1 = `https://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(artist)}&track=${encodeURIComponent(title)}&api_key=${LASTFM_KEY}&format=json`;
-    const r1 = await fetch(url1);
-    const d1 = await r1.json();
-    const imgs1 = d1?.track?.album?.image;
-    if (imgs1 && imgs1.length > 0) {
-      const big = imgs1.find((i) => i.size === "extralarge") || imgs1[imgs1.length - 1];
-      if (big?.["#text"]) return big["#text"];
-    }
+    const cleanTitle = cleanQuery(title);
+    const cleanArtist = cleanQuery(artist);
 
-    // 2차: track.search로 검색 시도 (1차 실패 시)
-    const url2 = `https://ws.audioscrobbler.com/2.0/?method=track.search&track=${encodeURIComponent(title)}&artist=${encodeURIComponent(artist)}&api_key=${LASTFM_KEY}&format=json&limit=1`;
-    const r2 = await fetch(url2);
-    const d2 = await r2.json();
-    const tracks = d2?.results?.trackmatches?.track;
-    if (tracks && tracks.length > 0) {
-      const t = tracks[0];
-      // 찾은 결과로 다시 track.getInfo
-      const url3 = `https://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(t.artist)}&track=${encodeURIComponent(t.name)}&api_key=${LASTFM_KEY}&format=json`;
-      const r3 = await fetch(url3);
-      const d3 = await r3.json();
-      const imgs3 = d3?.track?.album?.image;
-      if (imgs3 && imgs3.length > 0) {
-        const big = imgs3.find((i) => i.size === "extralarge") || imgs3[imgs3.length - 1];
-        if (big?.["#text"]) return big["#text"];
-      }
-    }
+    // 1차: 제목+아티스트, KR
+    let results = await iTunesSearch(`${cleanTitle} ${cleanArtist}`, "kr");
+    let cover = pickCover(results);
+    if (cover) return cover;
+
+    // 2차: 제목+아티스트, JP
+    results = await iTunesSearch(`${cleanTitle} ${cleanArtist}`, "jp");
+    cover = pickCover(results);
+    if (cover) return cover;
+
+    // 3차: 제목+아티스트, US
+    results = await iTunesSearch(`${cleanTitle} ${cleanArtist}`, "us");
+    cover = pickCover(results);
+    if (cover) return cover;
+
+    // 4차: 제목만, KR
+    results = await iTunesSearch(cleanTitle, "kr");
+    cover = pickCover(results);
+    if (cover) return cover;
+
+    // 5차: 제목만, JP
+    results = await iTunesSearch(cleanTitle, "jp");
+    cover = pickCover(results);
+    if (cover) return cover;
 
     return null;
   } catch {
@@ -51,36 +78,32 @@ async function fetchCoverLastFm(title, artist) {
   }
 }
 
-// ─── Last.fm API: 여러 결과 가져오기 (개별 검색 폼용) ───
+// ─── iTunes API: 여러 결과 가져오기 (개별 검색 폼용) ───
 async function searchCoversLastFm(title, artist) {
   try {
-    const q = `${artist} ${title}`.trim();
-    const url = `https://ws.audioscrobbler.com/2.0/?method=track.search&track=${encodeURIComponent(q)}&api_key=${LASTFM_KEY}&format=json&limit=5`;
-    const r = await fetch(url);
-    const d = await r.json();
-    const tracks = d?.results?.trackmatches?.track || [];
+    const cleanTitle = cleanQuery(title);
+    const cleanArtist = cleanQuery(artist);
+    const q = `${cleanTitle} ${cleanArtist}`.trim();
 
-    const results = [];
-    for (const t of tracks) {
-      try {
-        const infoUrl = `https://ws.audioscrobbler.com/2.0/?method=track.getInfo&artist=${encodeURIComponent(t.artist)}&track=${encodeURIComponent(t.name)}&api_key=${LASTFM_KEY}&format=json`;
-        const infoR = await fetch(infoUrl);
-        const infoD = await infoR.json();
-        const imgs = infoD?.track?.album?.image;
-        if (imgs && imgs.length > 0) {
-          const big = imgs.find((i) => i.size === "extralarge") || imgs[imgs.length - 1];
-          const small = imgs.find((i) => i.size === "medium") || imgs[0];
-          if (big?.["#text"]) {
-            results.push({
-              name: `${t.name} - ${t.artist}`,
-              cover: big["#text"],
-              small: small?.["#text"] || big["#text"],
-            });
-          }
-        }
-      } catch { /* 개별 에러는 무시 */ }
-    }
-    return results;
+    const [resKr, resJp, resUs] = await Promise.all([
+      iTunesSearch(q, "kr"),
+      iTunesSearch(q, "jp"),
+      iTunesSearch(q, "us"),
+    ]);
+
+    const seen = new Set();
+    const merged = [...resKr, ...resJp, ...resUs].filter((item) => {
+      const key = item.trackId || item.trackName;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return !!item.artworkUrl100;
+    });
+
+    return merged.slice(0, 6).map((item) => ({
+      name: `${item.trackName} - ${item.artistName}`,
+      cover: item.artworkUrl100.replace("100x100bb", "600x600bb"),
+      small: item.artworkUrl100,
+    }));
   } catch {
     return [];
   }
