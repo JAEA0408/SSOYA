@@ -24,11 +24,9 @@ function cleanQuery(str) {
     .trim();
 }
 
-// ─── iTunes API 단일 검색 헬퍼 (corsproxy.io 경유) ───
+// ─── iTunes API 단일 검색 헬퍼 (Vercel Edge Function 경유) ───
 async function iTunesSearch(q, country) {
-  const target = `https://itunes.apple.com/search?term=${encodeURIComponent(q)}&entity=song&limit=5&country=${country}`;
-  const proxy = `https://corsproxy.io/?url=${encodeURIComponent(target)}`;
-  const r = await fetch(proxy);
+  const r = await fetch(`/api/itunes?q=${encodeURIComponent(q)}&country=${country}`);
   const d = await r.json();
   return d.results || [];
 }
