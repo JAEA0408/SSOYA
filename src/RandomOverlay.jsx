@@ -2,36 +2,87 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { fetchSongs } from "./firebase";
 
 const TAG_COLORS = {
-  "신나요": { light: "#f59e0b", dark: "#fbbf24" },
-  "슬퍼요": { light: "#3b82f6", dark: "#60a5fa" },
-  "몽글몽글": { light: "#c084fc", dark: "#d8b4fe" },
-  "최애곡❤️": { light: "#ec4899", dark: "#f472b6" },
-  "HELL🔥": { light: "#ef4444", dark: "#f87171" },
-  "연습중💦": { light: "#06b6d4", dark: "#22d3ee" },
-  "발라드": { light: "#6366f1", dark: "#818cf8" },
-  "락": { light: "#64748b", dark: "#94a3b8" },
-  "힙합": { light: "#8b5cf6", dark: "#a78bfa" },
-  "댄스": { light: "#10b981", dark: "#34d399" },
-  "트로트": { light: "#eab308", dark: "#facc15" },
+  "신나요": { light: "#ff8fb2" },
+  "슬퍼요": { light: "#7c8cff" },
+  "몽글몽글": { light: "#c78bff" },
+  "최애곡❤️": { light: "#ff5c93" },
+  "HELL🔥": { light: "#ff6b81" },
+  "연습중💦": { light: "#59c6ff" },
+  "발라드": { light: "#8e7dff" },
+  "락": { light: "#7f879a" },
+  "힙합": { light: "#9d6bff" },
+  "댄스": { light: "#30c99a" },
+  "트로트": { light: "#f0a63a" },
 };
 
 const COVERS = [
-  "linear-gradient(135deg,#667eea,#764ba2)",
-  "linear-gradient(135deg,#f093fb,#f5576c)",
-  "linear-gradient(135deg,#4facfe,#00f2fe)",
-  "linear-gradient(135deg,#43e97b,#38f9d7)",
-  "linear-gradient(135deg,#fa709a,#fee140)",
-  "linear-gradient(135deg,#a18cd1,#fbc2eb)",
-  "linear-gradient(135deg,#fccb90,#d57eeb)",
-  "linear-gradient(135deg,#e0c3fc,#8ec5fc)",
-  "linear-gradient(135deg,#f5576c,#ff9a9e)",
-  "linear-gradient(135deg,#667eea,#43e97b)",
+  "linear-gradient(135deg,#ffd1dc,#ffb6c1)",
+  "linear-gradient(135deg,#ffc0cb,#ff9bb0)",
+  "linear-gradient(135deg,#ffd6e0,#ffb6c1)",
+  "linear-gradient(135deg,#ffbfd4,#ffa3bc)",
+  "linear-gradient(135deg,#ffe0ea,#ffb6c1)",
+  "linear-gradient(135deg,#ffc8d8,#ff91af)",
+  "linear-gradient(135deg,#ffe4ef,#ffb6c1)",
+  "linear-gradient(135deg,#ffd7e5,#ffabc0)",
+  "linear-gradient(135deg,#ffd0df,#ff8fad)",
+  "linear-gradient(135deg,#ffe7f0,#ffb6c1)",
 ];
 
 function hi(s = "") {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
   return Math.abs(h) % COVERS.length;
+}
+
+function LoadingShell() {
+  return (
+    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "22px", minHeight: "190px" }}>
+      <div
+        style={{
+          width: "148px",
+          height: "148px",
+          borderRadius: "24px",
+          background: "linear-gradient(135deg,#ffe3ec,#ffc9d8)",
+          flexShrink: 0,
+          opacity: 0.8,
+        }}
+      />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ width: "68%", height: "28px", borderRadius: "999px", background: "#ffd7e3", marginBottom: "12px", opacity: 0.9 }} />
+        <div style={{ width: "46%", height: "20px", borderRadius: "999px", background: "#ffe5ec", marginBottom: "18px", opacity: 0.9 }} />
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ width: "84px", height: "28px", borderRadius: "999px", background: "#ffe0ea" }} />
+          <div style={{ width: "74px", height: "28px", borderRadius: "999px", background: "#ffe0ea" }} />
+          <div style={{ width: "96px", height: "28px", borderRadius: "999px", background: "#ffe0ea" }} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IdleShell() {
+  return (
+    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "22px", minHeight: "190px" }}>
+      <div
+        style={{
+          width: "148px",
+          height: "148px",
+          borderRadius: "24px",
+          background: "linear-gradient(135deg,#ffd7e3,#ffb6c1)",
+          boxShadow: "0 12px 30px rgba(255,182,193,0.34)",
+          flexShrink: 0,
+        }}
+      />
+      <div style={{ minWidth: 0, flex: 1 }}>
+        <div style={{ width: "64%", height: "30px", borderRadius: "999px", background: "#ffd4e2", marginBottom: "12px" }} />
+        <div style={{ width: "42%", height: "21px", borderRadius: "999px", background: "#ffe3ea", marginBottom: "18px" }} />
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          <div style={{ width: "90px", height: "30px", borderRadius: "999px", background: "#fff0f5", border: "1px solid rgba(255,182,193,0.35)" }} />
+          <div style={{ width: "82px", height: "30px", borderRadius: "999px", background: "#fff0f5", border: "1px solid rgba(255,182,193,0.35)" }} />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function RandomOverlay() {
@@ -81,12 +132,6 @@ export default function RandomOverlay() {
   }, [running, sortedSongs]);
 
   useEffect(() => {
-    if (!loading && sortedSongs.length > 0 && !result && !running) {
-      startRandom();
-    }
-  }, [loading, sortedSongs, result, running, startRandom]);
-
-  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === "Space" || e.code === "Enter") {
         e.preventDefault();
@@ -112,21 +157,17 @@ export default function RandomOverlay() {
     >
       <div
         style={{
-          width: "min(100%, 560px)",
-          borderRadius: "28px",
-          background: "rgba(15,23,42,0.86)",
-          border: "1px solid rgba(255,255,255,0.14)",
-          boxShadow: "0 20px 70px rgba(0,0,0,0.45)",
-          backdropFilter: "blur(14px)",
-          padding: "24px",
-          color: "#f8fafc",
+          width: "min(100%, 600px)",
+          borderRadius: "30px",
+          background: "rgba(255,247,250,0.94)",
+          border: "1px solid rgba(255,182,193,0.58)",
+          boxShadow: "0 24px 70px rgba(255,182,193,0.28)",
+          backdropFilter: "blur(16px)",
+          padding: "22px",
+          color: "#7a3652",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "16px" }}>
-          <div>
-            <div style={{ fontSize: "12px", color: "#93c5fd", fontWeight: 700, marginBottom: "4px", letterSpacing: "0.04em" }}>SSOYA RANDOM OVERLAY</div>
-            <h1 style={{ fontSize: "24px", fontWeight: 800, lineHeight: 1.2 }}>랜덤 선곡</h1>
-          </div>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
           <button
             onClick={startRandom}
             disabled={loading || sortedSongs.length === 0 || running}
@@ -134,49 +175,42 @@ export default function RandomOverlay() {
               border: "none",
               borderRadius: "999px",
               padding: "12px 18px",
-              background: running ? "rgba(148,163,184,0.5)" : "linear-gradient(135deg,#6366f1,#8b5cf6)",
-              color: "#fff",
+              background: running ? "#f2c7d3" : "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
+              boxShadow: running ? "none" : "0 10px 26px rgba(255,182,193,0.34)",
+              color: "#ffffff",
               fontSize: "14px",
-              fontWeight: 700,
-              cursor: loading || running ? "not-allowed" : "pointer",
+              fontWeight: 800,
+              cursor: loading || running || sortedSongs.length === 0 ? "not-allowed" : "pointer",
               flexShrink: 0,
+              minWidth: "108px",
             }}
           >
-            {running ? "돌리는 중..." : result ? "🔄 다시 뽑기" : "🎲 시작"}
+            {running ? "돌리는 중..." : result ? "다시뽑기" : "시작"}
           </button>
         </div>
 
         <div
           style={{
-            minHeight: "180px",
-            borderRadius: "22px",
-            border: "1px solid rgba(255,255,255,0.1)",
-            background: "rgba(2,6,23,0.72)",
+            minHeight: "190px",
+            borderRadius: "24px",
+            border: "1px solid rgba(255,182,193,0.36)",
+            background: "rgba(255,255,255,0.76)",
             overflow: "hidden",
           }}
         >
           {loading ? (
-            <div style={{ minHeight: "180px", display: "flex", alignItems: "center", justifyContent: "center", color: "#cbd5e1", fontSize: "16px", fontWeight: 600 }}>
-              ⏳ 곡 불러오는 중...
-            </div>
+            <LoadingShell />
           ) : sortedSongs.length === 0 ? (
-            <div style={{ minHeight: "180px", display: "flex", alignItems: "center", justifyContent: "center", color: "#cbd5e1", fontSize: "16px", fontWeight: 600 }}>
-              곡이 없어서 랜덤 선곡을 할 수 없어
+            <div style={{ minHeight: "190px", display: "flex", alignItems: "center", justifyContent: "center", color: "#c86b8a", fontSize: "16px", fontWeight: 700 }}>
+              표시할 곡이 없어
             </div>
           ) : running ? (
             <RollingSlot songs={sortedSongs} />
           ) : result ? (
             <ResultCard song={result} />
           ) : (
-            <div style={{ minHeight: "180px", display: "flex", alignItems: "center", justifyContent: "center", color: "#cbd5e1", fontSize: "16px", fontWeight: 600 }}>
-              랜덤 선곡 준비 완료
-            </div>
+            <IdleShell />
           )}
-        </div>
-
-        <div style={{ marginTop: "14px", fontSize: "12px", color: "#94a3b8", display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
-          <span>OBS 브라우저 소스에 이 경로를 그대로 넣으면 돼</span>
-          <span>엔터 / 스페이스로 다시 뽑기 가능</span>
         </div>
       </div>
     </div>
@@ -187,24 +221,24 @@ function ResultCard({ song }) {
   const bg = song.albumCover ? `url(${song.albumCover}) center/cover no-repeat` : COVERS[hi(song.id)];
 
   return (
-    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "20px", minHeight: "180px" }}>
+    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "22px", minHeight: "190px" }}>
       <div
         style={{
-          width: "140px",
-          height: "140px",
-          borderRadius: "22px",
+          width: "148px",
+          height: "148px",
+          borderRadius: "24px",
           background: bg,
           flexShrink: 0,
-          boxShadow: "0 0 36px rgba(99,102,241,0.35)",
+          boxShadow: "0 14px 34px rgba(255,182,193,0.34)",
         }}
       />
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: "31px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", wordBreak: "keep-all" }}>{song.title}</div>
-        <div style={{ fontSize: "21px", color: "#cbd5e1", fontWeight: 600, marginBottom: "14px", wordBreak: "keep-all" }}>{song.artist}</div>
+        <div style={{ fontSize: "33px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", color: "#8f3659", wordBreak: "keep-all" }}>{song.title}</div>
+        <div style={{ fontSize: "22px", color: "#b05e7f", fontWeight: 700, marginBottom: "14px", wordBreak: "keep-all" }}>{song.artist}</div>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-          <span style={{ fontSize: "14px", color: "#94a3b8", fontWeight: 700 }}>⭐ {song.starCount || 0}</span>
+          <span style={{ fontSize: "14px", color: "#c86b8a", fontWeight: 800 }}>⭐ {song.starCount || 0}</span>
           {(song.tags || []).map((tag) => {
-            const c = TAG_COLORS[tag]?.light || "#94a3b8";
+            const c = TAG_COLORS[tag]?.light || "#c86b8a";
             return (
               <span
                 key={tag}
@@ -212,10 +246,10 @@ function ResultCard({ song }) {
                   padding: "4px 10px",
                   borderRadius: "999px",
                   fontSize: "12px",
-                  fontWeight: 700,
-                  background: `${c}22`,
+                  fontWeight: 800,
+                  background: `${c}16`,
                   color: c,
-                  border: `1px solid ${c}44`,
+                  border: `1px solid ${c}33`,
                 }}
               >
                 {tag}
@@ -254,12 +288,20 @@ function RollingSlot({ songs }) {
   if (!song) return null;
 
   return (
-    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "20px", minHeight: "180px" }}>
-      <div style={{ width: "140px", height: "140px", borderRadius: "22px", background: bg, flexShrink: 0 }} />
+    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "22px", minHeight: "190px" }}>
+      <div
+        style={{
+          width: "148px",
+          height: "148px",
+          borderRadius: "24px",
+          background: bg,
+          flexShrink: 0,
+          boxShadow: "0 14px 34px rgba(255,182,193,0.34)",
+        }}
+      />
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: "18px", color: "#60a5fa", fontWeight: 800, marginBottom: "8px" }}>🎰 랜덤 선곡 중...</div>
-        <div style={{ fontSize: "31px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", wordBreak: "keep-all" }}>{song.title}</div>
-        <div style={{ fontSize: "21px", color: "#cbd5e1", fontWeight: 600, wordBreak: "keep-all" }}>{song.artist}</div>
+        <div style={{ fontSize: "33px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", color: "#8f3659", wordBreak: "keep-all" }}>{song.title}</div>
+        <div style={{ fontSize: "22px", color: "#b05e7f", fontWeight: 700, wordBreak: "keep-all" }}>{song.artist}</div>
       </div>
     </div>
   );
