@@ -1,25 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { fetchSongs, updateSong, addSong, adminLogin, adminLogout } from "./firebase";
 
-const MOOD_TAGS = ["신나요", "슬퍼요", "몽글몽글"];
-const SPECIAL_TAGS = ["최애곡❤️", "HELL🔥", "연습중💦"];
-const GENRE_TAGS = ["발라드", "락", "힙합", "댄스", "트로트"];
-const FILTER_TAG_GROUPS = [MOOD_TAGS, SPECIAL_TAGS, GENRE_TAGS];
-const ALL_TAGS = [...MOOD_TAGS, ...SPECIAL_TAGS, ...GENRE_TAGS];
+const FILTER_TAGS = ["HELL", "연습곡", "신남", "슬픔"];
+const ALL_TAGS = ["JPOP", "KPOP", "HELL", "연습곡", "신남", "슬픔"];
 const ADMIN_EMAIL = "admin@ssoya.com";
 
 const TAG_COLORS = {
-  "신나요": { light: "#f59e0b", dark: "#fbbf24" },
-  "슬퍼요": { light: "#3b82f6", dark: "#60a5fa" },
-  "몽글몽글": { light: "#c084fc", dark: "#d8b4fe" },
-  "최애곡❤️": { light: "#ec4899", dark: "#f472b6" },
-  "HELL🔥": { light: "#ef4444", dark: "#f87171" },
-  "연습중💦": { light: "#06b6d4", dark: "#22d3ee" },
-  "발라드": { light: "#6366f1", dark: "#818cf8" },
-  "락": { light: "#64748b", dark: "#94a3b8" },
-  "힙합": { light: "#8b5cf6", dark: "#a78bfa" },
-  "댄스": { light: "#10b981", dark: "#34d399" },
-  "트로트": { light: "#eab308", dark: "#facc15" },
+  JPOP: { light: "#3b82f6", dark: "#60a5fa" },
+  KPOP: { light: "#10b981", dark: "#34d399" },
+  HELL: { light: "#ef4444", dark: "#f87171" },
+  "연습곡": { light: "#22c55e", dark: "#4ade80" },
+  "신남": { light: "#f59e0b", dark: "#fbbf24" },
+  "슬픔": { light: "#6366f1", dark: "#818cf8" },
 };
 
 const COVERS = [
@@ -88,6 +80,9 @@ export default function SSOYA() {
   const [likeF, setLikeF] = useState(false);
   const [sortBy, setSortBy] = useState("stars");
   const [sortOpen, setSortOpen] = useState(false);
+  const [viewMode, setViewMode] = useState(() => {
+    try { return localStorage.getItem("ssoya_view") || "list"; } catch { return "list"; }
+  });
   const [likes, setLikes] = useState(() => {
     try { return JSON.parse(localStorage.getItem("ssoya_likes") || "{}"); } catch { return {}; }
   });
@@ -132,6 +127,7 @@ export default function SSOYA() {
   useEffect(() => { fetchSongs().then((d) => { setSongs(d); setLoading(false); }); }, []);
   useEffect(() => { localStorage.setItem("ssoya_likes", JSON.stringify(likes)); }, [likes]);
   useEffect(() => { localStorage.setItem("ssoya_theme", dark ? "dark" : "light"); }, [dark]);
+  useEffect(() => { localStorage.setItem("ssoya_view", viewMode); }, [viewMode]);
   useEffect(() => {
     const h = () => setShowTop(window.scrollY > 400);
     window.addEventListener("scroll", h);
@@ -327,7 +323,7 @@ export default function SSOYA() {
     ? { bg: "#0f0f1a", card: "#1a1a2e", text: "#e2e8f0", sub: "#94a3b8", brd: "#2d2d44", acc: "#3b82f6", inBg: "#1a1a2e", inBrd: "#2d2d44", shd: "0 2px 12px rgba(0,0,0,0.4)", mod: "rgba(0,0,0,0.75)", acBg: "#1e1e32", acHover: "#252542", editBar: "#1a2540", editBtn: "#1e3a5f", syncBadge: "#1e3a5f" }
     : { bg: "#f1f5f9", card: "#ffffff", text: "#1e293b", sub: "#64748b", brd: "#e2e8f0", acc: "#3b82f6", inBg: "#f8fafc", inBrd: "#d1d5db", shd: "0 2px 12px rgba(0,0,0,0.08)", mod: "rgba(0,0,0,0.5)", acBg: "#ffffff", acHover: "#f1f5f9", editBar: "#eff6ff", editBtn: "#dbeafe", syncBadge: "#dbeafe" };
 
-  const sL = { stars: "부른횟수순", title: "제목순", artist: "가수순" };
+  const sL = { default: "기본순", title: "제목순", artist: "가수순", stars: "부른횟수순" };
 
   const hlText = (text, query) => {
     if (!query) return text;
@@ -425,17 +421,11 @@ export default function SSOYA() {
 
         {/* 태그 필터 + 좋아요 필터 */}
         <div style={{ display: "flex", flexWrap: "wrap", gap: "7px", padding: "2px 0 10px", alignItems: "center" }}>
+          {FILTER_TAGS.map((tag) => {
+            const a = selTags.includes(tag); const c = TAG_COLORS[tag]?.[dark ? "dark" : "light"] || "#888";
+            return <button key={tag} className="fb" onClick={() => toggleTag(tag)} style={{ padding: "5px 13px", borderRadius: "20px", border: `1.5px solid ${a ? c : t.brd}`, background: a ? c + "22" : "transparent", color: a ? c : t.sub, fontSize: "12.5px", fontWeight: 600, cursor: "pointer" }}>{tag}</button>;
+          })}
           <button className="fb" onClick={() => setLikeF(!likeF)} style={{ padding: "5px 13px", borderRadius: "20px", border: `1.5px solid ${likeF ? "#ef4444" : t.brd}`, background: likeF ? "rgba(239,68,68,.12)" : "transparent", color: likeF ? "#ef4444" : t.sub, fontSize: "12.5px", fontWeight: 600, cursor: "pointer" }}>{likeF ? "❤️" : "🤍"} 좋아요</button>
-          {FILTER_TAG_GROUPS.map((group, groupIdx) => (
-            <div key={groupIdx} style={{ display: "flex", alignItems: "center", gap: "7px", flexWrap: "wrap" }}>
-              {groupIdx > 0 && <span style={{ width: "1px", height: "20px", background: t.brd, margin: "0 2px" }} />}
-              {group.map((tag) => {
-                const a = selTags.includes(tag);
-                const c = TAG_COLORS[tag]?.[dark ? "dark" : "light"] || "#888";
-                return <button key={tag} className="fb" onClick={() => toggleTag(tag)} style={{ padding: "5px 13px", borderRadius: "20px", border: `1.5px solid ${a ? c : t.brd}`, background: a ? c + "22" : "transparent", color: a ? c : t.sub, fontSize: "12.5px", fontWeight: 600, cursor: "pointer" }}>{tag}</button>;
-              })}
-            </div>
-          ))}
         </div>
 
         {/* 곡 수 + 추가 버튼 + 뷰전환 + 정렬 + 랜덤 */}
@@ -447,6 +437,7 @@ export default function SSOYA() {
             )}
           </div>
           <div style={{ display: "flex", gap: "7px", alignItems: "center" }}>
+            <button onClick={() => setViewMode(viewMode === "list" ? "grid" : "list")} style={{ padding: "6px 12px", borderRadius: "10px", border: `1px solid ${t.brd}`, background: t.card, color: t.text, fontSize: "12.5px", cursor: "pointer", display: "flex", alignItems: "center", gap: "5px", fontWeight: 500 }}>{viewMode === "list" ? "▦ 카드 보기" : "☰ 목록 보기"}</button>
             <div ref={sortR} style={{ position: "relative" }}>
               <button onClick={() => setSortOpen(!sortOpen)} style={{ padding: "6px 13px", borderRadius: "10px", border: `1px solid ${t.brd}`, background: t.card, color: t.text, fontSize: "12.5px", cursor: "pointer", fontWeight: 500, display: "flex", alignItems: "center", gap: "4px" }}>{sL[sortBy]} <span style={{ fontSize: "9px" }}>▼</span></button>
               {sortOpen && (
@@ -465,7 +456,7 @@ export default function SSOYA() {
         ) : sorted.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: t.sub }}><div style={{ fontSize: "42px", marginBottom: "10px" }}>🎵</div><p>{songs.length === 0 ? "등록된 노래가 없어요" : "조건에 맞는 노래가 없어요"}</p></div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "10px", paddingBottom: "80px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: viewMode === "grid" ? "repeat(auto-fill,minmax(min(100%,280px),1fr))" : "1fr", gap: "10px", paddingBottom: "80px" }}>
             {sorted.map((s, i) => {
               const isEditing = editingId === s.id;
               const bg = s.albumCover ? `url(${s.albumCover}) center/cover no-repeat` : COVERS[hi(s.id)];

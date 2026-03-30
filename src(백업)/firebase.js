@@ -53,10 +53,7 @@ export async function addSong(songData) {
 }
 
 export async function updateSong(id, songData) {
-  await update(ref(db, `songs/${id}`), {
-    ...songData,
-    updatedAt: Math.floor(Date.now() / 1000),
-  });
+  await update(ref(db, `songs/${id}`), songData);
 }
 
 export async function deleteSong(id) {

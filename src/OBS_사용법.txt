@@ -1,0 +1,27 @@
+적용 파일:
+- App.jsx
+- RandomOverlay.jsx (신규)
+- SSOYA.jsx
+- Admin.jsx
+- firebase.js
+- index.css
+- main.jsx
+
+랜덤 오버레이 주소:
+https://네도메인/random-overlay
+예)
+https://ssoya.vercel.app/random-overlay
+
+OBS 브라우저 소스 설정 예시:
+- URL: https://네도메인/random-overlay
+- 너비: 1280
+- 높이: 720
+- 화면이 비면 새로고침 또는 상호작용(Interact) 후 엔터/스페이스로 다시 뽑기
+
+적용 방법:
+1. 압축을 풀기
+2. src 폴더 안 파일들을 기존 프로젝트 src 폴더에 덮어쓰기
+3. 새 파일 RandomOverlay.jsx도 src 안에 추가하기
+4. npm run dev 로 로컬 확인
+5. git add . && git commit -m "Add random overlay route" && git push
+6. Vercel 자동배포 확인

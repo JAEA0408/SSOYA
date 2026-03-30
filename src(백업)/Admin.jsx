@@ -5,22 +5,10 @@ import { fetchSongs, addSong, updateSong, deleteSong, setAllSongs, setSong, admi
 import * as XLSX from "xlsx";
 
 const ADMIN_EMAIL = "admin@ssoya.com";
-const MOOD_TAGS = ["신나요", "슬퍼요", "몽글몽글"];
-const SPECIAL_TAGS = ["최애곡❤️", "HELL🔥", "연습중💦"];
-const GENRE_TAGS = ["발라드", "락", "힙합", "댄스", "트로트"];
-const ALL_TAGS = [...MOOD_TAGS, ...SPECIAL_TAGS, ...GENRE_TAGS];
+const ALL_TAGS = ["JPOP", "KPOP", "HELL", "연습곡", "신남", "슬픔"];
 const TAG_COLORS = {
-  "신나요": "#f59e0b",
-  "슬퍼요": "#3b82f6",
-  "몽글몽글": "#c084fc",
-  "최애곡❤️": "#ec4899",
-  "HELL🔥": "#ef4444",
-  "연습중💦": "#06b6d4",
-  "발라드": "#6366f1",
-  "락": "#64748b",
-  "힙합": "#8b5cf6",
-  "댄스": "#10b981",
-  "트로트": "#eab308",
+  JPOP: "#3b82f6", KPOP: "#10b981", HELL: "#ef4444",
+  "연습곡": "#22c55e", "신남": "#f59e0b", "슬픔": "#6366f1",
 };
 
 function delay(ms) { return new Promise((r) => setTimeout(r, ms)); }
