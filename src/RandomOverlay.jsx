@@ -158,105 +158,117 @@ export default function RandomOverlay() {
       <div
         style={{
           width: "min(100%, 600px)",
-          borderRadius: "30px",
-          background: "rgba(255,247,250,0.94)",
-          border: "1px solid rgba(255,182,193,0.58)",
-          boxShadow: "0 24px 70px rgba(255,182,193,0.28)",
+          minHeight: "190px",
+          borderRadius: "24px",
+          border: "1px solid rgba(255,182,193,0.36)",
+          background: "rgba(255,255,255,0.76)",
           backdropFilter: "blur(16px)",
-          padding: "22px",
+          boxShadow: "0 24px 70px rgba(255,182,193,0.28)",
+          overflow: "hidden",
           color: "#7a3652",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "14px" }}>
-          <button
-            onClick={startRandom}
-            disabled={loading || sortedSongs.length === 0 || running}
-            style={{
-              border: "none",
-              borderRadius: "999px",
-              padding: "12px 18px",
-              background: running ? "#f2c7d3" : "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
-              boxShadow: running ? "none" : "0 10px 26px rgba(255,182,193,0.34)",
-              color: "#ffffff",
-              fontSize: "14px",
-              fontWeight: 800,
-              cursor: loading || running || sortedSongs.length === 0 ? "not-allowed" : "pointer",
-              flexShrink: 0,
-              minWidth: "108px",
-            }}
-          >
-            {running ? "돌리는 중..." : result ? "다시뽑기" : "시작"}
-          </button>
-        </div>
-
-        <div
-          style={{
-            minHeight: "190px",
-            borderRadius: "24px",
-            border: "1px solid rgba(255,182,193,0.36)",
-            background: "rgba(255,255,255,0.76)",
-            overflow: "hidden",
-          }}
-        >
-          {loading ? (
-            <LoadingShell />
-          ) : sortedSongs.length === 0 ? (
-            <div style={{ minHeight: "190px", display: "flex", alignItems: "center", justifyContent: "center", color: "#c86b8a", fontSize: "16px", fontWeight: 700 }}>
-              표시할 곡이 없어
-            </div>
-          ) : running ? (
-            <RollingSlot songs={sortedSongs} />
-          ) : result ? (
-            <ResultCard song={result} />
-          ) : (
+        {loading ? (
+          <LoadingShell />
+        ) : sortedSongs.length === 0 ? (
+          <div style={{ minHeight: "190px", display: "flex", alignItems: "center", justifyContent: "center", color: "#c86b8a", fontSize: "16px", fontWeight: 700 }}>
+            표시할 곡이 없어
+          </div>
+        ) : running ? (
+          <RollingSlot songs={sortedSongs} />
+        ) : result ? (
+          <ResultCard song={result} onReroll={startRandom} />
+        ) : (
+          <div>
             <IdleShell />
-          )}
-        </div>
+            <div style={{ display: "flex", justifyContent: "center", padding: "0 22px 18px" }}>
+              <button
+                onClick={startRandom}
+                disabled={sortedSongs.length === 0}
+                style={{
+                  border: "none",
+                  borderRadius: "999px",
+                  padding: "12px 28px",
+                  background: "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
+                  boxShadow: "0 10px 26px rgba(255,182,193,0.34)",
+                  color: "#ffffff",
+                  fontSize: "16px",
+                  fontWeight: 800,
+                  cursor: sortedSongs.length === 0 ? "not-allowed" : "pointer",
+                  minWidth: "120px",
+                }}
+              >
+                시작
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
-function ResultCard({ song }) {
+function ResultCard({ song, onReroll }) {
   const bg = song.albumCover ? `url(${song.albumCover}) center/cover no-repeat` : COVERS[hi(song.id)];
 
   return (
-    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "22px", minHeight: "190px" }}>
-      <div
-        style={{
-          width: "148px",
-          height: "148px",
-          borderRadius: "24px",
-          background: bg,
-          flexShrink: 0,
-          boxShadow: "0 14px 34px rgba(255,182,193,0.34)",
-        }}
-      />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: "33px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", color: "#8f3659", wordBreak: "keep-all" }}>{song.title}</div>
-        <div style={{ fontSize: "22px", color: "#b05e7f", fontWeight: 700, marginBottom: "14px", wordBreak: "keep-all" }}>{song.artist}</div>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-          <span style={{ fontSize: "14px", color: "#c86b8a", fontWeight: 800 }}>⭐ {song.starCount || 0}</span>
-          {(song.tags || []).map((tag) => {
-            const c = TAG_COLORS[tag]?.light || "#c86b8a";
-            return (
-              <span
-                key={tag}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: "999px",
-                  fontSize: "12px",
-                  fontWeight: 800,
-                  background: `${c}16`,
-                  color: c,
-                  border: `1px solid ${c}33`,
-                }}
-              >
-                {tag}
-              </span>
-            );
-          })}
+    <div style={{ padding: "22px" }}>
+      <div style={{ display: "flex", gap: "18px", alignItems: "center", minHeight: "160px" }}>
+        <div
+          style={{
+            width: "148px",
+            height: "148px",
+            borderRadius: "24px",
+            background: bg,
+            flexShrink: 0,
+            boxShadow: "0 14px 34px rgba(255,182,193,0.34)",
+          }}
+        />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontSize: "39.6px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", color: "#8f3659", wordBreak: "keep-all" }}>{song.title}</div>
+          <div style={{ fontSize: "26.4px", color: "#b05e7f", fontWeight: 700, marginBottom: "14px", wordBreak: "keep-all" }}>{song.artist}</div>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
+            <span style={{ fontSize: "26.4px", color: "#c86b8a", fontWeight: 800 }}>⭐ {song.starCount || 0}</span>
+            {(song.tags || []).map((tag) => {
+              const c = TAG_COLORS[tag]?.light || "#c86b8a";
+              return (
+                <span
+                  key={tag}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: "999px",
+                    fontSize: "12px",
+                    fontWeight: 800,
+                    background: `${c}16`,
+                    color: c,
+                    border: `1px solid ${c}33`,
+                  }}
+                >
+                  {tag}
+                </span>
+              );
+            })}
+          </div>
         </div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}>
+        <button
+          onClick={onReroll}
+          style={{
+            border: "none",
+            borderRadius: "999px",
+            padding: "12px 28px",
+            background: "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
+            boxShadow: "0 10px 26px rgba(255,182,193,0.34)",
+            color: "#ffffff",
+            fontSize: "16px",
+            fontWeight: 800,
+            cursor: "pointer",
+            minWidth: "120px",
+          }}
+        >
+          다시뽑기
+        </button>
       </div>
     </div>
   );
@@ -272,7 +284,7 @@ function RollingSlot({ songs }) {
 
     const tick = () => {
       const progress = Math.min((Date.now() - startedAt) / duration, 1);
-      setIdx((prev) => (prev + 1) % songs.length);
+      setIdx(Math.floor(Math.random() * songs.length));
       if (progress < 1) {
         timeoutId = window.setTimeout(tick, 50 + Math.pow(progress, 2.5) * 600);
       }

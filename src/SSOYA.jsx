@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { fetchSongs, updateSong, addSong, adminLogin, adminLogout } from "./firebase";
+import { fetchSongs, updateSong, addSong, deleteSong, adminLogin, adminLogout } from "./firebase";
 
 const MOOD_TAGS = ["신나요", "슬퍼요", "몽글몽글"];
 const SPECIAL_TAGS = ["최애곡❤️", "HELL🔥", "연습중💦"];
@@ -249,6 +249,11 @@ export default function SSOYA() {
     setEditCoverOpen(false); setEditCoverResults([]);
   };
 
+  const handleDelete = async (id) => {
+    await deleteSong(id);
+    setSongs((prev) => prev.filter((s) => s.id !== id));
+  };
+
   // 편집 함수
   const startEdit = (song) => {
     setEditingId(song.id);
@@ -483,7 +488,10 @@ export default function SSOYA() {
                           <button onClick={saveEdit} style={{ padding: "5px 14px", borderRadius: "8px", border: "none", background: t.acc, color: "#fff", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>💾 저장</button>
                         </>
                       ) : (
-                        <button onClick={() => startEdit(s)} style={{ padding: "5px 15px", borderRadius: "8px", border: `1px solid ${t.acc}60`, background: t.editBtn, color: t.acc, fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>✏️ 편집</button>
+                        <>
+                          <button onClick={() => startEdit(s)} style={{ padding: "5px 15px", borderRadius: "8px", border: `1px solid ${t.acc}60`, background: t.editBtn, color: t.acc, fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>✏️ 편집</button>
+                          <button onClick={() => handleDelete(s.id)} style={{ padding: "5px 15px", borderRadius: "8px", border: "1px solid #ef444460", background: dark ? "#3a1525" : "#fee2e2", color: "#ef4444", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>🗑️ 삭제</button>
+                        </>
                       )}
                     </div>
                   )}
@@ -583,7 +591,7 @@ export default function SSOYA() {
       </div>
 
       {/* 맨 위로 버튼 */}
-      {showTop && <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{ position: "fixed", bottom: "24px", right: "24px", width: "46px", height: "46px", borderRadius: "50%", background: t.acc, color: "#fff", border: "none", fontSize: "20px", cursor: "pointer", boxShadow: "0 4px 16px rgba(59,130,246,.3)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center" }}>↑</button>}
+      {showTop && <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} style={{ position: "fixed", bottom: "24px", right: "24px", width: "46px", height: "46px", borderRadius: "50%", background: "#ffffff", color: "#333333", border: "none", fontSize: "20px", cursor: "pointer", boxShadow: "0 4px 20px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.1)", zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>↑</button>}
 
       {/* 슬롯머신 모달 */}
       {slotModal && (
@@ -723,7 +731,7 @@ function Slot({ songs, t }) {
     const st = Date.now(), dur = 2600;
     const tick = () => {
       const p = Math.min((Date.now() - st) / dur, 1);
-      setIdx((i) => (i + 1) % songs.length);
+      setIdx(Math.floor(Math.random() * songs.length));
       if (p < 1) to = setTimeout(tick, 50 + Math.pow(p, 2.5) * 600);
     };
     to = setTimeout(tick, 50);
