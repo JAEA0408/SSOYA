@@ -161,10 +161,11 @@ export default function RandomOverlay() {
           width: "min(100%, 600px)",
           minHeight: "190px",
           borderRadius: "24px",
-          border: "1px solid rgba(255,182,193,0.36)",
+          border: "1px solid rgba(255,255,255,0.5)",
           background: "rgba(255,247,250,0.94)",
           backdropFilter: "blur(16px)",
-          boxShadow: "0 24px 70px rgba(255,182,193,0.28)",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.1), 0 20px 40px rgba(0,0,0,0.08), 0 0 0 1px rgba(255,255,255,0.15)",
+          transform: "translateY(-4px)",
           overflow: "hidden",
           color: "#7a3652",
         }}
