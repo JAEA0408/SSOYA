@@ -45,6 +45,8 @@ function LoadingShell() {
           background: "linear-gradient(135deg,#ffe3ec,#ffc9d8)",
           flexShrink: 0,
           opacity: 0.8,
+          boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
+          border: "1px solid rgba(255,255,255,0.25)",
         }}
       />
       <div style={{ minWidth: 0, flex: 1 }}>
@@ -69,7 +71,7 @@ function IdleShell() {
           height: "148px",
           borderRadius: "24px",
           background: "linear-gradient(135deg,#ffd7e3,#ffb6c1)",
-          boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.12), 0 20px 40px rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
           border: "1px solid rgba(255,255,255,0.25)",
           flexShrink: 0,
         }}
@@ -162,7 +164,7 @@ export default function RandomOverlay() {
           minHeight: "190px",
           borderRadius: "24px",
           border: "1px solid rgba(255,182,193,0.35)",
-          background: "rgba(255,247,250,0.7)",
+          background: "rgba(255,240,245,0.95)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
           boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.1), 0 0 0 1px rgba(255,255,255,0.15)",
@@ -224,7 +226,7 @@ function ResultCard({ song, onReroll }) {
             borderRadius: "24px",
             background: bg,
             flexShrink: 0,
-            boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.12), 0 20px 40px rgba(0,0,0,0.08)",
+            boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
             border: "1px solid rgba(255,255,255,0.25)",
           }}
         />
@@ -312,7 +314,7 @@ function RollingSlot({ songs }) {
           borderRadius: "24px",
           background: bg,
           flexShrink: 0,
-          boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.12), 0 20px 40px rgba(0,0,0,0.08)",
+          boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
           border: "1px solid rgba(255,255,255,0.25)",
         }}
       />
