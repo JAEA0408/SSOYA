@@ -128,7 +128,7 @@ export default function RandomOverlay() {
     window.setTimeout(() => {
       setResult(chosen);
       setRunning(false);
-    }, 2800);
+    }, 5600);
   }, [running, sortedSongs]);
 
   useEffect(() => {
@@ -161,7 +161,7 @@ export default function RandomOverlay() {
           minHeight: "190px",
           borderRadius: "24px",
           border: "1px solid rgba(255,182,193,0.36)",
-          background: "rgba(255,255,255,0.76)",
+          background: "rgba(255,247,250,0.94)",
           backdropFilter: "blur(16px)",
           boxShadow: "0 24px 70px rgba(255,182,193,0.28)",
           overflow: "hidden",
@@ -227,48 +227,48 @@ function ResultCard({ song, onReroll }) {
         <div style={{ minWidth: 0, flex: 1 }}>
           <div style={{ fontSize: "39.6px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", color: "#8f3659", wordBreak: "keep-all" }}>{song.title}</div>
           <div style={{ fontSize: "26.4px", color: "#b05e7f", fontWeight: 700, marginBottom: "14px", wordBreak: "keep-all" }}>{song.artist}</div>
-          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "10px" }}>
-            <span style={{ fontSize: "26.4px", color: "#c86b8a", fontWeight: 800 }}>⭐ {song.starCount || 0}</span>
-            {(song.tags || []).map((tag) => {
-              const c = TAG_COLORS[tag]?.light || "#c86b8a";
-              return (
-                <span
-                  key={tag}
-                  style={{
-                    padding: "4px 10px",
-                    borderRadius: "999px",
-                    fontSize: "12px",
-                    fontWeight: 800,
-                    background: `${c}16`,
-                    color: c,
-                    border: `1px solid ${c}33`,
-                  }}
-                >
-                  {tag}
-                </span>
-              );
-            })}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginBottom: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <span style={{ fontSize: "26.4px", color: "#c86b8a", fontWeight: 800 }}>⭐ {song.starCount || 0}</span>
+              {(song.tags || []).map((tag) => {
+                const c = TAG_COLORS[tag]?.light || "#c86b8a";
+                return (
+                  <span
+                    key={tag}
+                    style={{
+                      padding: "4px 10px",
+                      borderRadius: "999px",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      background: `${c}16`,
+                      color: c,
+                      border: `1px solid ${c}33`,
+                    }}
+                  >
+                    {tag}
+                  </span>
+                );
+              })}
+            </div>
+            <button
+              onClick={onReroll}
+              style={{
+                border: "none",
+                borderRadius: "999px",
+                padding: "10px 22px",
+                background: "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
+                boxShadow: "0 10px 26px rgba(255,182,193,0.34)",
+                color: "#ffffff",
+                fontSize: "20.8px",
+                fontWeight: 800,
+                cursor: "pointer",
+                flexShrink: 0,
+              }}
+            >
+              다시뽑기
+            </button>
           </div>
         </div>
-      </div>
-      <div style={{ display: "flex", justifyContent: "center", marginTop: "16px" }}>
-        <button
-          onClick={onReroll}
-          style={{
-            border: "none",
-            borderRadius: "999px",
-            padding: "12px 28px",
-            background: "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
-            boxShadow: "0 10px 26px rgba(255,182,193,0.34)",
-            color: "#ffffff",
-            fontSize: "16px",
-            fontWeight: 800,
-            cursor: "pointer",
-            minWidth: "120px",
-          }}
-        >
-          다시뽑기
-        </button>
       </div>
     </div>
   );
@@ -280,13 +280,13 @@ function RollingSlot({ songs }) {
   useEffect(() => {
     let timeoutId;
     const startedAt = Date.now();
-    const duration = 2600;
+    const duration = 5200;
 
     const tick = () => {
       const progress = Math.min((Date.now() - startedAt) / duration, 1);
       setIdx(Math.floor(Math.random() * songs.length));
       if (progress < 1) {
-        timeoutId = window.setTimeout(tick, 50 + Math.pow(progress, 2.5) * 600);
+        timeoutId = window.setTimeout(tick, 100 + Math.pow(progress, 2.5) * 1200);
       }
     };
 
