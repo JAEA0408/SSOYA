@@ -69,7 +69,8 @@ function IdleShell() {
           height: "148px",
           borderRadius: "24px",
           background: "linear-gradient(135deg,#ffd7e3,#ffb6c1)",
-          boxShadow: "0 12px 30px rgba(255,182,193,0.34)",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.12), 0 20px 40px rgba(0,0,0,0.08)",
+          border: "1px solid rgba(255,255,255,0.25)",
           flexShrink: 0,
         }}
       />
@@ -221,7 +222,8 @@ function ResultCard({ song, onReroll }) {
             borderRadius: "24px",
             background: bg,
             flexShrink: 0,
-            boxShadow: "0 14px 34px rgba(255,182,193,0.34)",
+            boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.12), 0 20px 40px rgba(0,0,0,0.08)",
+            border: "1px solid rgba(255,255,255,0.25)",
           }}
         />
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -308,7 +310,8 @@ function RollingSlot({ songs }) {
           borderRadius: "24px",
           background: bg,
           flexShrink: 0,
-          boxShadow: "0 14px 34px rgba(255,182,193,0.34)",
+          boxShadow: "0 2px 4px rgba(0,0,0,0.15), 0 8px 16px rgba(0,0,0,0.12), 0 20px 40px rgba(0,0,0,0.08)",
+          border: "1px solid rgba(255,255,255,0.25)",
         }}
       />
       <div style={{ minWidth: 0, flex: 1 }}>
