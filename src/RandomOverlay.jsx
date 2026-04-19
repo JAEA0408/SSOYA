@@ -128,7 +128,7 @@ export default function RandomOverlay() {
     window.setTimeout(() => {
       setResult(chosen);
       setRunning(false);
-    }, 5600);
+    }, 2800);
   }, [running, sortedSongs]);
 
   useEffect(() => {
@@ -280,7 +280,7 @@ function RollingSlot({ songs }) {
   useEffect(() => {
     let timeoutId;
     const startedAt = Date.now();
-    const duration = 5200;
+    const duration = 2600;
 
     const tick = () => {
       const progress = Math.min((Date.now() - startedAt) / duration, 1);
