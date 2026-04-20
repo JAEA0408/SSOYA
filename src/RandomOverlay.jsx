@@ -62,26 +62,47 @@ function LoadingShell() {
   );
 }
 
-function IdleShell() {
+function IdleShell({ onStart, disabled }) {
   return (
-    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "22px", minHeight: "190px" }}>
-      <div
-        style={{
-          width: "148px",
-          height: "148px",
-          borderRadius: "24px",
-          background: "linear-gradient(135deg,#ffd7e3,#ffb6c1)",
-          boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
-          border: "1px solid rgba(255,255,255,0.25)",
-          flexShrink: 0,
-        }}
-      />
-      <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ width: "64%", height: "30px", borderRadius: "999px", background: "#ffd4e2", marginBottom: "12px" }} />
-        <div style={{ width: "42%", height: "21px", borderRadius: "999px", background: "#ffe3ea", marginBottom: "18px" }} />
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-          <div style={{ width: "90px", height: "30px", borderRadius: "999px", background: "#fff0f5", border: "1px solid rgba(255,182,193,0.35)" }} />
-          <div style={{ width: "82px", height: "30px", borderRadius: "999px", background: "#fff0f5", border: "1px solid rgba(255,182,193,0.35)" }} />
+    <div style={{ padding: "22px" }}>
+      <div style={{ display: "flex", gap: "18px", alignItems: "center", minHeight: "160px" }}>
+        <div
+          style={{
+            width: "148px",
+            height: "148px",
+            borderRadius: "24px",
+            background: "linear-gradient(135deg,#ffd7e3,#ffb6c1)",
+            boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
+            border: "1px solid rgba(255,255,255,0.25)",
+            flexShrink: 0,
+          }}
+        />
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ width: "64%", height: "39.6px", borderRadius: "999px", background: "#ffd4e2", marginBottom: "8px" }} />
+          <div style={{ width: "42%", height: "26.4px", borderRadius: "999px", background: "#ffe3ea", marginBottom: "14px" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", marginBottom: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ width: "90px", height: "26.4px", borderRadius: "999px", background: "#fff0f5", border: "1px solid rgba(255,182,193,0.35)" }} />
+            </div>
+            <button
+              onClick={onStart}
+              disabled={disabled}
+              style={{
+                border: "none",
+                borderRadius: "999px",
+                padding: "10px 22px",
+                background: "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
+                boxShadow: "0 10px 26px rgba(255,182,193,0.34)",
+                color: "#ffffff",
+                fontSize: "20.8px",
+                fontWeight: 800,
+                cursor: disabled ? "not-allowed" : "pointer",
+                flexShrink: 0,
+              }}
+            >
+              시작
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -184,29 +205,7 @@ export default function RandomOverlay() {
         ) : result ? (
           <ResultCard song={result} onReroll={startRandom} />
         ) : (
-          <div>
-            <IdleShell />
-            <div style={{ display: "flex", justifyContent: "center", padding: "0 22px 18px" }}>
-              <button
-                onClick={startRandom}
-                disabled={sortedSongs.length === 0}
-                style={{
-                  border: "none",
-                  borderRadius: "999px",
-                  padding: "12px 28px",
-                  background: "linear-gradient(135deg,#ffb6c1,#ff8fb1)",
-                  boxShadow: "0 10px 26px rgba(255,182,193,0.34)",
-                  color: "#ffffff",
-                  fontSize: "16px",
-                  fontWeight: 800,
-                  cursor: sortedSongs.length === 0 ? "not-allowed" : "pointer",
-                  minWidth: "120px",
-                }}
-              >
-                시작
-              </button>
-            </div>
-          </div>
+          <IdleShell onStart={startRandom} disabled={sortedSongs.length === 0} />
         )}
       </div>
     </div>
