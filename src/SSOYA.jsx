@@ -95,6 +95,7 @@ export default function SSOYA() {
     try { return localStorage.getItem("ssoya_theme") === "dark"; } catch { return false; }
   });
   const [showTop, setShowTop] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== "undefined" ? window.innerWidth < 600 : false);
   const [slotModal, setSlotModal] = useState(false);
   const [slotResult, setSlotResult] = useState(null);
   const [slotRun, setSlotRun] = useState(false);
@@ -136,6 +137,11 @@ export default function SSOYA() {
     const h = () => setShowTop(window.scrollY > 400);
     window.addEventListener("scroll", h);
     return () => window.removeEventListener("scroll", h);
+  }, []);
+  useEffect(() => {
+    const h = () => setIsMobile(window.innerWidth < 600);
+    window.addEventListener("resize", h);
+    return () => window.removeEventListener("resize", h);
   }, []);
   useEffect(() => {
     const h = (e) => {
@@ -566,20 +572,29 @@ export default function SSOYA() {
                   ) : (
                     // 일반 보기
                     <div style={{ display: "flex", minHeight: "110px" }}>
-                      <div style={{ position: "relative", width: "110px", minWidth: "110px", height: "110px", background: bg, flexShrink: 0 }}>
+                      <div style={{ position: "relative", width: "110px", minWidth: "110px", height: isMobile ? "auto" : "110px", background: bg, flexShrink: 0 }}>
                         <button className="hb" onClick={() => toggleLike(s.id)} style={{ position: "absolute", top: "5px", left: "5px", background: "rgba(0,0,0,.4)", backdropFilter: "blur(4px)", border: "none", borderRadius: "50%", width: "32px", height: "32px", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", fontSize: "15px" }}>{likes[s.id] ? "❤️" : "🤍"}</button>
                       </div>
-                      <div style={{ flex: 1, padding: "12px 14px", display: "flex", justifyContent: "space-between", gap: "8px", minWidth: 0 }}>
-                        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "5px", minWidth: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: "20px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.02em", lineHeight: 1.3 }}>{s.title}</div>
-                          <div style={{ fontSize: "16.5px", color: t.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.artist}</div>
-                        </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", gap: "8px", flexShrink: 0 }}>
-                          <span style={{ fontSize: "15px", color: t.sub, fontWeight: 600, whiteSpace: "nowrap" }}>⭐ {s.starCount || 0}</span>
-                          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", justifyContent: "flex-end" }}>
-                            {(s.tags || []).map((tag) => { const c = TAG_COLORS[tag]?.[dark ? "dark" : "light"] || "#888"; return <span key={tag} style={{ padding: "2px 9px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, background: c + "20", color: c }}>{tag}</span>; })}
+                      <div style={{ flex: 1, padding: "12px 14px", display: "flex", flexDirection: "column", gap: "8px", minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", gap: "8px", minWidth: 0, flex: 1 }}>
+                          <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: "5px", minWidth: 0 }}>
+                            <div style={{ fontWeight: 800, fontSize: "20px", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", letterSpacing: "-0.02em", lineHeight: 1.3 }}>{s.title}</div>
+                            <div style={{ fontSize: "16.5px", color: t.sub, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.artist}</div>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", justifyContent: "center", gap: "8px", flexShrink: 0 }}>
+                            <span style={{ fontSize: "15px", color: t.sub, fontWeight: 600, whiteSpace: "nowrap" }}>⭐ {s.starCount || 0}</span>
+                            {!isMobile && (
+                              <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                                {(s.tags || []).map((tag) => { const c = TAG_COLORS[tag]?.[dark ? "dark" : "light"] || "#888"; return <span key={tag} style={{ padding: "2px 9px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, background: c + "20", color: c }}>{tag}</span>; })}
+                              </div>
+                            )}
                           </div>
                         </div>
+                        {isMobile && (s.tags || []).length > 0 && (
+                          <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+                            {(s.tags || []).map((tag) => { const c = TAG_COLORS[tag]?.[dark ? "dark" : "light"] || "#888"; return <span key={tag} style={{ padding: "2px 9px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, background: c + "20", color: c }}>{tag}</span>; })}
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

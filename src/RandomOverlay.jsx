@@ -152,7 +152,7 @@ export default function RandomOverlay() {
     window.setTimeout(() => {
       setResult(chosen);
       setRunning(false);
-    }, 2800);
+    }, 3000);
   }, [running, sortedSongs]);
 
   useEffect(() => {
@@ -285,17 +285,18 @@ function RollingSlot({ songs }) {
   useEffect(() => {
     let timeoutId;
     const startedAt = Date.now();
-    const duration = 2600;
+    const rollingDuration = 2400;
 
     const tick = () => {
-      const progress = Math.min((Date.now() - startedAt) / duration, 1);
+      const elapsed = Date.now() - startedAt;
+      if (elapsed >= rollingDuration) return;
+      const progress = Math.min(elapsed / rollingDuration, 1);
       setIdx(Math.floor(Math.random() * songs.length));
-      if (progress < 1) {
-        timeoutId = window.setTimeout(tick, 100 + Math.pow(progress, 2.5) * 1200);
-      }
+      const nextDelay = 130 + Math.pow(progress, 3) * 700;
+      timeoutId = window.setTimeout(tick, nextDelay);
     };
 
-    timeoutId = window.setTimeout(tick, 50);
+    timeoutId = window.setTimeout(tick, 80);
     return () => window.clearTimeout(timeoutId);
   }, [songs.length]);
 
