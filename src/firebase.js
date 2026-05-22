@@ -1,7 +1,7 @@
 // SSOYA Firebase DB + 인증 설정
 
 import { initializeApp } from "firebase/app";
-import { getDatabase, ref, get, set, push, remove, update } from "firebase/database";
+import { getDatabase, ref, get, set, push, remove, update, onValue } from "firebase/database";
 import { getAuth, signInWithEmailAndPassword, signOut } from "firebase/auth";
 
 const firebaseConfig = {
@@ -69,4 +69,23 @@ export async function setAllSongs(data) {
 
 export async function setSong(id, songData) {
   await set(ref(db, `songs/${id}`), songData);
+}
+
+// ─── 랜덤 슬롯 동기화 ───
+// 시작/다시뽑기 누른 쪽에서 뽑힌 곡 + 신호를 기록
+export async function triggerRandom(songId) {
+  await set(ref(db, "randomTrigger"), {
+    songId,
+    nonce: Date.now(),
+  });
+}
+
+// 신호가 바뀌는지 실시간 감시. 바뀌면 callback({ songId, nonce }) 호출
+export function listenRandomTrigger(callback) {
+  const triggerRef = ref(db, "randomTrigger");
+  const unsubscribe = onValue(triggerRef, (snapshot) => {
+    const val = snapshot.val();
+    if (val && val.nonce) callback(val);
+  });
+  return unsubscribe;
 }

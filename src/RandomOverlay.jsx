@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchSongs } from "./firebase";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { fetchSongs, triggerRandom, listenRandomTrigger } from "./firebase";
 
 const TAG_COLORS = {
   "신나요": { light: "#ff8fb2" },
@@ -144,27 +144,55 @@ export default function RandomOverlay() {
     [songs]
   );
 
-  const startRandom = useCallback(() => {
-    if (sortedSongs.length === 0 || running) return;
+  // 최신 곡 목록을 ref로 유지 (신호 감지 콜백에서 항상 최신 목록 참조)
+  const sortedSongsRef = useRef(sortedSongs);
+  useEffect(() => { sortedSongsRef.current = sortedSongs; }, [sortedSongs]);
+
+  const runningRef = useRef(false);
+  useEffect(() => { runningRef.current = running; }, [running]);
+
+  // 실제 슬롯을 돌리는 함수 (신호를 받으면 실행됨)
+  const runSlot = useCallback((song) => {
+    if (!song) return;
     setRunning(true);
     setResult(null);
-    const chosen = sortedSongs[Math.floor(Math.random() * sortedSongs.length)];
     window.setTimeout(() => {
-      setResult(chosen);
+      setResult(song);
       setRunning(false);
     }, 3000);
+  }, []);
+
+  // 버튼/키 입력 → 곡을 뽑아서 Firebase에 신호만 기록 (직접 안 돌림)
+  const requestRandom = useCallback(() => {
+    if (sortedSongs.length === 0 || running) return;
+    const chosen = sortedSongs[Math.floor(Math.random() * sortedSongs.length)];
+    triggerRandom(chosen.id);
   }, [running, sortedSongs]);
+
+  // Firebase 신호 감시 → 신호 오면 양쪽 화면이 동시에 같은 곡으로 슬롯 돌림
+  const lastNonceRef = useRef(null);
+  useEffect(() => {
+    const unsubscribe = listenRandomTrigger(({ songId, nonce }) => {
+      if (lastNonceRef.current === nonce) return; // 같은 신호 중복 방지
+      lastNonceRef.current = nonce;
+      if (runningRef.current) return; // 이미 돌고 있으면 무시
+      const list = sortedSongsRef.current;
+      const song = list.find((s) => s.id === songId);
+      if (song) runSlot(song);
+    });
+    return () => unsubscribe();
+  }, [runSlot]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.code === "Space" || e.code === "Enter") {
         e.preventDefault();
-        startRandom();
+        requestRandom();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [startRandom]);
+  }, [requestRandom]);
 
   return (
     <div
@@ -203,9 +231,9 @@ export default function RandomOverlay() {
         ) : running ? (
           <RollingSlot songs={sortedSongs} />
         ) : result ? (
-          <ResultCard song={result} onReroll={startRandom} />
+          <ResultCard song={result} onReroll={requestRandom} />
         ) : (
-          <IdleShell onStart={startRandom} disabled={sortedSongs.length === 0} />
+          <IdleShell onStart={requestRandom} disabled={sortedSongs.length === 0} />
         )}
       </div>
     </div>
