@@ -209,12 +209,25 @@ export default function RandomOverlay() {
         fontFamily: "'Pretendard','Noto Sans KR',-apple-system,sans-serif",
       }}
     >
+      <style>{`
+        @keyframes ssoyaContainerGlow {
+          0% { box-shadow: 0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 0 0px rgba(255,143,177,0); }
+          30% { box-shadow: 0 0 40px 12px rgba(255,143,177,0.85), 0 0 80px 24px rgba(255,209,102,0.55); }
+          100% { box-shadow: 0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.1); }
+        }
+        @keyframes ssoyaContainerBorder {
+          0%, 100% { border-color: rgba(255,182,193,0.35); }
+          25% { border-color: rgba(255,209,102,1); }
+          50% { border-color: rgba(255,143,177,1); }
+          75% { border-color: rgba(255,209,102,1); }
+        }
+      `}</style>
       <div
         style={{
           width: "min(100%, 600px)",
           minHeight: "190px",
           borderRadius: "24px",
-          border: "1px solid rgba(255,182,193,0.35)",
+          border: "2px solid rgba(255,182,193,0.35)",
           background: "rgba(255,240,245,0.95)",
           backdropFilter: "blur(20px)",
           WebkitBackdropFilter: "blur(20px)",
@@ -222,6 +235,7 @@ export default function RandomOverlay() {
           transform: "translateY(-4px)",
           overflow: "hidden",
           color: "#7a3652",
+          animation: result ? "ssoyaContainerGlow 1.2s ease-out, ssoyaContainerBorder 1s ease-out" : "none",
         }}
       >
         {loading ? (
@@ -283,17 +297,6 @@ function ResultCard({ song, onReroll }) {
           0% { opacity: 1; transform: translateY(0) rotate(0deg); }
           100% { opacity: 0; transform: translateY(260px) rotate(540deg); }
         }
-        @keyframes ssoyaGlow {
-          0% { box-shadow: 0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 0 0px rgba(255,143,177,0); }
-          30% { box-shadow: 0 0 30px 8px rgba(255,143,177,0.85), 0 0 60px 16px rgba(255,209,102,0.5); }
-          100% { box-shadow: 0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08); }
-        }
-        @keyframes ssoyaBorderFlash {
-          0%, 100% { border-color: rgba(255,255,255,0.25); }
-          25% { border-color: rgba(255,209,102,1); }
-          50% { border-color: rgba(255,143,177,1); }
-          75% { border-color: rgba(255,209,102,1); }
-        }
         @keyframes ssoyaPop {
           0% { transform: scale(1); }
           40% { transform: scale(1.08); }
@@ -317,8 +320,8 @@ function ResultCard({ song, onReroll }) {
             borderRadius: "24px",
             background: bg,
             flexShrink: 0,
-            border: "2px solid rgba(255,255,255,0.25)",
-            animation: "ssoyaGlow 1.2s ease-out, ssoyaBorderFlash 1s ease-out",
+            boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
+            border: "1px solid rgba(255,255,255,0.25)",
           }}
         />
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -397,16 +400,20 @@ function ReelCell({ song, height }) {
 
 function RollingSlot({ songs, winner }) {
   const CELL_H = 190;       // 한 칸 높이
-  const SPIN_COUNT = 28;    // 흐르는 칸 개수 (당첨 칸 전까지)
+  const SPIN_COUNT = 7;     // 흐르는 칸 개수 (당첨 칸 전까지)
+  const BUFFER = 2;         // 당첨 칸 뒤 여분 칸 (반동용)
   const [offset, setOffset] = useState(0);
 
-  // 릴 시퀀스: 랜덤곡 SPIN_COUNT개 + 마지막에 당첨곡
+  // 릴 시퀀스: 랜덤곡 SPIN_COUNT개 + 당첨곡 + 여분 랜덤곡 BUFFER개
   const reel = useMemo(() => {
     const arr = [];
     for (let i = 0; i < SPIN_COUNT; i++) {
       arr.push(songs[Math.floor(Math.random() * songs.length)]);
     }
-    arr.push(winner || songs[0]); // 마지막 칸 = 당첨곡
+    arr.push(winner || songs[0]); // 당첨 칸 (인덱스 = SPIN_COUNT)
+    for (let i = 0; i < BUFFER; i++) {
+      arr.push(songs[Math.floor(Math.random() * songs.length)]);
+    }
     return arr;
   }, [songs, winner]);
 
@@ -416,18 +423,25 @@ function RollingSlot({ songs, winner }) {
     let rafId;
     const startedAt = performance.now();
     const duration = 3000;
+    const overshoot = CELL_H * 0.5; // 반동: 당첨 칸을 반 칸 정도 지나쳤다 되돌아옴
 
-    // 속도 곡선 + 반동: 끝에서 살짝 넘어갔다가(overshoot) 되돌아오며 철컥 멈춤
-    const easeOutBack = (x) => {
-      const c1 = 2.2;          // 반동 세기 (클수록 강함)
-      const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    // 0→1 구간: 부드럽게 감속(easeOut) + 끝부분에서 살짝 넘어갔다 복귀(반동)
+    const easeWithBounce = (x) => {
+      // 기본 감속 (천천히 시작 아니라, 끝으로 갈수록 느려지는 ease-out)
+      const base = 1 - Math.pow(1 - x, 3);
+      // 반동: 후반 80%~100% 구간에서 사인파로 살짝 튀어나갔다 복귀
+      let bounce = 0;
+      if (x > 0.8) {
+        const p = (x - 0.8) / 0.2; // 0→1
+        bounce = Math.sin(p * Math.PI) * (overshoot / finalOffset);
+      }
+      return base + bounce;
     };
 
     const animate = (now) => {
       const elapsed = now - startedAt;
       const t = Math.min(elapsed / duration, 1);
-      const eased = easeOutBack(t);
+      const eased = easeWithBounce(t);
       setOffset(finalOffset * eased);
       if (t < 1) {
         rafId = requestAnimationFrame(animate);
