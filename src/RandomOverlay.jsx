@@ -423,27 +423,35 @@ function RollingSlot({ songs, winner }) {
     let rafId;
     const startedAt = performance.now();
     const duration = 4000;
-    const overshoot = CELL_H * 1.1; // 반동 크기 (당첨 칸을 2.5칸이나 지나쳤다 복귀)
+    const overshoot = CELL_H * 1.1; // 반동 크기 (당첨 칸을 1.1칸 지나침)
+    const peakOffset = finalOffset + overshoot; // 가장 많이 지나친 지점
 
-    // 거의 일정 속도로 흐르다 끝에서 살짝 감속 + 부드럽게 이어지는 반동.
-    // easeOutSine: 후반 감속이 약해서 속도 끊김이 적음.
+    // 릴 평균 속도(픽셀/ms). 넘어가는 구간을 이 속도에 맞춤
+    const reelSpeed = peakOffset / duration;
+    // 되돌아오는 데 쓸 시간 비율 (전체의 마지막 18%)
+    const returnRatio = 0.18;
+    const goEnd = 1 - returnRatio; // 넘어가기 끝나는 시점(비율)
+
+    // 넘어가는 구간: 거의 일정 속도(약한 감속), peakOffset까지 도달
     const easeOutSine = (x) => Math.sin((x * Math.PI) / 2);
 
     const animate = (now) => {
       const elapsed = now - startedAt;
       const t = Math.min(elapsed / duration, 1);
 
-      // 본 이동: 0→finalOffset (약한 감속)
-      const base = finalOffset * easeOutSine(t);
-
-      // 반동: 마지막 25% 구간에서만, 본 이동 속도에 얹어서 크게 넘어갔다 복귀
-      let bounce = 0;
-      if (t > 0.75) {
-        const p = (t - 0.75) / 0.25; // 0→1
-        bounce = Math.sin(p * Math.PI) * overshoot;
+      let pos;
+      if (t <= goEnd) {
+        // 1단계: peakOffset까지 일정 속도로 넘어감 (릴 속도 유지)
+        const tt = t / goEnd; // 0→1
+        pos = peakOffset * easeOutSine(tt);
+      } else {
+        // 2단계: peakOffset에서 finalOffset으로 부드럽게 되돌아옴
+        const tt = (t - goEnd) / returnRatio; // 0→1
+        const easeBack = 1 - Math.pow(1 - tt, 2); // 빠르게 시작해 천천히 안착
+        pos = peakOffset - overshoot * easeBack;
       }
 
-      setOffset(base + bounce);
+      setOffset(pos);
       if (t < 1) {
         rafId = requestAnimationFrame(animate);
       } else {
