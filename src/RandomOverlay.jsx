@@ -401,7 +401,7 @@ function ReelCell({ song, height }) {
 function RollingSlot({ songs, winner }) {
   const CELL_H = 190;       // 한 칸 높이
   const SPIN_COUNT = 11;    // 흐르는 칸 개수 (당첨 칸 전까지)
-  const BUFFER = 2;         // 당첨 칸 뒤 여분 칸 (반동용)
+  const BUFFER = 4;         // 당첨 칸 뒤 여분 칸 (반동용)
   const [offset, setOffset] = useState(0);
 
   // 릴 시퀀스: 랜덤곡 SPIN_COUNT개 + 당첨곡 + 여분 랜덤곡 BUFFER개
@@ -423,7 +423,7 @@ function RollingSlot({ songs, winner }) {
     let rafId;
     const startedAt = performance.now();
     const duration = 4000;
-    const overshoot = CELL_H * 0.5; // 반동 크기 (반 칸 정도 넘어갔다 복귀)
+    const overshoot = CELL_H * 2.5; // 반동 크기 (당첨 칸을 2.5칸이나 지나쳤다 복귀)
 
     // 거의 일정 속도로 흐르다 끝에서 살짝 감속 + 부드럽게 이어지는 반동.
     // easeOutSine: 후반 감속이 약해서 속도 끊김이 적음.
@@ -436,10 +436,10 @@ function RollingSlot({ songs, winner }) {
       // 본 이동: 0→finalOffset (약한 감속)
       const base = finalOffset * easeOutSine(t);
 
-      // 반동: 마지막 15% 구간에서만, 본 이동 속도에 얹어서 살짝 넘어갔다 복귀
+      // 반동: 마지막 25% 구간에서만, 본 이동 속도에 얹어서 크게 넘어갔다 복귀
       let bounce = 0;
-      if (t > 0.85) {
-        const p = (t - 0.85) / 0.15; // 0→1
+      if (t > 0.75) {
+        const p = (t - 0.75) / 0.25; // 0→1
         bounce = Math.sin(p * Math.PI) * overshoot;
       }
 
