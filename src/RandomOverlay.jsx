@@ -423,7 +423,7 @@ function RollingSlot({ songs, winner }) {
     let rafId;
     const startedAt = performance.now();
     const duration = 4000;
-    const overshoot = CELL_H * 2.5; // 반동 크기 (당첨 칸을 2.5칸이나 지나쳤다 복귀)
+    const overshoot = CELL_H * 1.5; // 반동 크기 (당첨 칸을 2.5칸이나 지나쳤다 복귀)
 
     // 거의 일정 속도로 흐르다 끝에서 살짝 감속 + 부드럽게 이어지는 반동.
     // easeOutSine: 후반 감속이 약해서 속도 끊김이 적음.
