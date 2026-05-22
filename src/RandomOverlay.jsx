@@ -161,7 +161,7 @@ export default function RandomOverlay() {
     window.setTimeout(() => {
       setResult(song);
       setRunning(false);
-    }, 3000);
+    }, 5000);
   }, []);
 
   // 버튼/키 입력 → 곡을 뽑아서 Firebase에 신호만 기록 (직접 안 돌림)
@@ -400,7 +400,7 @@ function ReelCell({ song, height }) {
 
 function RollingSlot({ songs, winner }) {
   const CELL_H = 190;       // 한 칸 높이
-  const SPIN_COUNT = 7;     // 흐르는 칸 개수 (당첨 칸 전까지)
+  const SPIN_COUNT = 18;    // 흐르는 칸 개수 (당첨 칸 전까지)
   const BUFFER = 2;         // 당첨 칸 뒤 여분 칸 (반동용)
   const [offset, setOffset] = useState(0);
 
@@ -422,27 +422,28 @@ function RollingSlot({ songs, winner }) {
   useEffect(() => {
     let rafId;
     const startedAt = performance.now();
-    const duration = 3000;
-    const overshoot = CELL_H * 0.5; // 반동: 당첨 칸을 반 칸 정도 지나쳤다 되돌아옴
+    const duration = 5000;
+    const overshoot = CELL_H * 0.5; // 반동 크기 (반 칸 정도 넘어갔다 복귀)
 
-    // 0→1 구간: 부드럽게 감속(easeOut) + 끝부분에서 살짝 넘어갔다 복귀(반동)
-    const easeWithBounce = (x) => {
-      // 기본 감속 (천천히 시작 아니라, 끝으로 갈수록 느려지는 ease-out)
-      const base = 1 - Math.pow(1 - x, 3);
-      // 반동: 후반 80%~100% 구간에서 사인파로 살짝 튀어나갔다 복귀
-      let bounce = 0;
-      if (x > 0.8) {
-        const p = (x - 0.8) / 0.2; // 0→1
-        bounce = Math.sin(p * Math.PI) * (overshoot / finalOffset);
-      }
-      return base + bounce;
-    };
+    // 거의 일정 속도로 흐르다 끝에서 살짝 감속 + 부드럽게 이어지는 반동.
+    // easeOutSine: 후반 감속이 약해서 속도 끊김이 적음.
+    const easeOutSine = (x) => Math.sin((x * Math.PI) / 2);
 
     const animate = (now) => {
       const elapsed = now - startedAt;
       const t = Math.min(elapsed / duration, 1);
-      const eased = easeWithBounce(t);
-      setOffset(finalOffset * eased);
+
+      // 본 이동: 0→finalOffset (약한 감속)
+      const base = finalOffset * easeOutSine(t);
+
+      // 반동: 마지막 15% 구간에서만, 본 이동 속도에 얹어서 살짝 넘어갔다 복귀
+      let bounce = 0;
+      if (t > 0.85) {
+        const p = (t - 0.85) / 0.15; // 0→1
+        bounce = Math.sin(p * Math.PI) * overshoot;
+      }
+
+      setOffset(base + bounce);
       if (t < 1) {
         rafId = requestAnimationFrame(animate);
       } else {
