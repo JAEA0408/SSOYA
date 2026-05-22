@@ -114,6 +114,7 @@ export default function RandomOverlay() {
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState(null);
+  const [winner, setWinner] = useState(null);
 
   useEffect(() => {
     const prevBodyBg = document.body.style.background;
@@ -154,6 +155,7 @@ export default function RandomOverlay() {
   // 실제 슬롯을 돌리는 함수 (신호를 받으면 실행됨)
   const runSlot = useCallback((song) => {
     if (!song) return;
+    setWinner(song);
     setRunning(true);
     setResult(null);
     window.setTimeout(() => {
@@ -166,24 +168,18 @@ export default function RandomOverlay() {
   const requestRandom = useCallback(() => {
     if (sortedSongs.length === 0 || running) return;
     const chosen = sortedSongs[Math.floor(Math.random() * sortedSongs.length)];
-    console.log("[SSOYA] 신호 보내는 중:", chosen.id, chosen.title);
-    triggerRandom(chosen.id)
-      .then(() => console.log("[SSOYA] 신호 전송 성공"))
-      .catch((e) => console.error("[SSOYA] 신호 전송 실패:", e));
+    triggerRandom(chosen.id);
   }, [running, sortedSongs]);
 
   // Firebase 신호 감시 → 신호 오면 양쪽 화면이 동시에 같은 곡으로 슬롯 돌림
   const lastNonceRef = useRef(null);
   useEffect(() => {
-    console.log("[SSOYA] 신호 감시 시작");
     const unsubscribe = listenRandomTrigger(({ songId, nonce }) => {
-      console.log("[SSOYA] 신호 수신:", songId, "nonce:", nonce, "이전:", lastNonceRef.current);
       if (lastNonceRef.current === nonce) return; // 같은 신호 중복 방지
       lastNonceRef.current = nonce;
       if (runningRef.current) return; // 이미 돌고 있으면 무시
       const list = sortedSongsRef.current;
       const song = list.find((s) => s.id === songId);
-      console.log("[SSOYA] 곡 찾음?:", song ? song.title : "못찾음 (목록 " + list.length + "곡)");
       if (song) runSlot(song);
     });
     return () => unsubscribe();
@@ -235,7 +231,7 @@ export default function RandomOverlay() {
             표시할 곡이 없어
           </div>
         ) : running ? (
-          <RollingSlot songs={sortedSongs} />
+          <RollingSlot songs={sortedSongs} winner={winner} />
         ) : result ? (
           <ResultCard song={result} onReroll={requestRandom} />
         ) : (
@@ -246,12 +242,74 @@ export default function RandomOverlay() {
   );
 }
 
+// 색종이 한 조각
+function ConfettiPiece({ delay, left, color, rotate }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "-20px",
+        left: `${left}%`,
+        width: "10px",
+        height: "14px",
+        background: color,
+        borderRadius: "2px",
+        opacity: 0,
+        animation: `ssoyaConfetti 1.4s ease-out ${delay}s forwards`,
+        transform: `rotate(${rotate}deg)`,
+      }}
+    />
+  );
+}
+
 function ResultCard({ song, onReroll }) {
   const bg = song.albumCover ? `url(${song.albumCover}) center/cover no-repeat` : COVERS[hi(song.id)];
 
+  // 색종이 조각들 (한 번만 생성)
+  const confetti = useMemo(() => {
+    const colors = ["#ff8fb1", "#ffd166", "#06d6a0", "#7c8cff", "#ff5c93", "#c78bff"];
+    return Array.from({ length: 40 }, (_, i) => ({
+      delay: Math.random() * 0.3,
+      left: Math.random() * 100,
+      color: colors[i % colors.length],
+      rotate: Math.random() * 360,
+    }));
+  }, [song.id]);
+
   return (
-    <div style={{ padding: "22px" }}>
-      <div style={{ display: "flex", gap: "18px", alignItems: "center", minHeight: "160px" }}>
+    <div style={{ padding: "22px", position: "relative", overflow: "hidden" }}>
+      <style>{`
+        @keyframes ssoyaConfetti {
+          0% { opacity: 1; transform: translateY(0) rotate(0deg); }
+          100% { opacity: 0; transform: translateY(260px) rotate(540deg); }
+        }
+        @keyframes ssoyaGlow {
+          0% { box-shadow: 0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 0 0px rgba(255,143,177,0); }
+          30% { box-shadow: 0 0 30px 8px rgba(255,143,177,0.85), 0 0 60px 16px rgba(255,209,102,0.5); }
+          100% { box-shadow: 0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08); }
+        }
+        @keyframes ssoyaBorderFlash {
+          0%, 100% { border-color: rgba(255,255,255,0.25); }
+          25% { border-color: rgba(255,209,102,1); }
+          50% { border-color: rgba(255,143,177,1); }
+          75% { border-color: rgba(255,209,102,1); }
+        }
+        @keyframes ssoyaPop {
+          0% { transform: scale(1); }
+          40% { transform: scale(1.08); }
+          70% { transform: scale(0.97); }
+          100% { transform: scale(1); }
+        }
+      `}</style>
+
+      {/* 색종이 */}
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none", zIndex: 5 }}>
+        {confetti.map((c, i) => (
+          <ConfettiPiece key={i} {...c} />
+        ))}
+      </div>
+
+      <div style={{ display: "flex", gap: "18px", alignItems: "center", minHeight: "160px", animation: "ssoyaPop 0.6s ease-out" }}>
         <div
           style={{
             width: "148px",
@@ -259,8 +317,8 @@ function ResultCard({ song, onReroll }) {
             borderRadius: "24px",
             background: bg,
             flexShrink: 0,
-            boxShadow: "0 2px 4px rgba(180,100,120,0.15), 0 8px 16px rgba(180,100,120,0.12), 0 20px 40px rgba(180,100,120,0.08)",
-            border: "1px solid rgba(255,255,255,0.25)",
+            border: "2px solid rgba(255,255,255,0.25)",
+            animation: "ssoyaGlow 1.2s ease-out, ssoyaBorderFlash 1s ease-out",
           }}
         />
         <div style={{ minWidth: 0, flex: 1 }}>
@@ -313,34 +371,11 @@ function ResultCard({ song, onReroll }) {
   );
 }
 
-function RollingSlot({ songs }) {
-  const [idx, setIdx] = useState(0);
-
-  useEffect(() => {
-    let timeoutId;
-    const startedAt = Date.now();
-    const rollingDuration = 2400;
-
-    const tick = () => {
-      const elapsed = Date.now() - startedAt;
-      if (elapsed >= rollingDuration) return;
-      const progress = Math.min(elapsed / rollingDuration, 1);
-      setIdx(Math.floor(Math.random() * songs.length));
-      const nextDelay = 130 + Math.pow(progress, 3) * 700;
-      timeoutId = window.setTimeout(tick, nextDelay);
-    };
-
-    timeoutId = window.setTimeout(tick, 80);
-    return () => window.clearTimeout(timeoutId);
-  }, [songs.length]);
-
-  const song = songs[idx % songs.length];
+// 한 칸(곡 하나)을 그리는 컴포넌트 — 릴 안에 세로로 쌓임
+function ReelCell({ song, height }) {
   const bg = song?.albumCover ? `url(${song.albumCover}) center/cover no-repeat` : COVERS[hi(song?.id || "")];
-
-  if (!song) return null;
-
   return (
-    <div style={{ display: "flex", gap: "18px", alignItems: "center", padding: "22px", minHeight: "190px" }}>
+    <div style={{ height: `${height}px`, display: "flex", gap: "18px", alignItems: "center", padding: "0 22px", boxSizing: "border-box" }}>
       <div
         style={{
           width: "148px",
@@ -353,8 +388,69 @@ function RollingSlot({ songs }) {
         }}
       />
       <div style={{ minWidth: 0, flex: 1 }}>
-        <div style={{ fontSize: "33px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", color: "#8f3659", wordBreak: "keep-all" }}>{song.title}</div>
-        <div style={{ fontSize: "22px", color: "#b05e7f", fontWeight: 700, wordBreak: "keep-all" }}>{song.artist}</div>
+        <div style={{ fontSize: "33px", fontWeight: 900, lineHeight: 1.15, marginBottom: "8px", color: "#8f3659", wordBreak: "keep-all", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{song?.title}</div>
+        <div style={{ fontSize: "22px", color: "#b05e7f", fontWeight: 700, wordBreak: "keep-all", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{song?.artist}</div>
+      </div>
+    </div>
+  );
+}
+
+function RollingSlot({ songs, winner }) {
+  const CELL_H = 190;       // 한 칸 높이
+  const SPIN_COUNT = 28;    // 흐르는 칸 개수 (당첨 칸 전까지)
+  const [offset, setOffset] = useState(0);
+
+  // 릴 시퀀스: 랜덤곡 SPIN_COUNT개 + 마지막에 당첨곡
+  const reel = useMemo(() => {
+    const arr = [];
+    for (let i = 0; i < SPIN_COUNT; i++) {
+      arr.push(songs[Math.floor(Math.random() * songs.length)]);
+    }
+    arr.push(winner || songs[0]); // 마지막 칸 = 당첨곡
+    return arr;
+  }, [songs, winner]);
+
+  const finalOffset = SPIN_COUNT * CELL_H; // 당첨 칸까지의 거리
+
+  useEffect(() => {
+    let rafId;
+    const startedAt = performance.now();
+    const duration = 3000;
+
+    // 속도 곡선 + 반동: 끝에서 살짝 넘어갔다가(overshoot) 되돌아오며 철컥 멈춤
+    const easeOutBack = (x) => {
+      const c1 = 2.2;          // 반동 세기 (클수록 강함)
+      const c3 = c1 + 1;
+      return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2);
+    };
+
+    const animate = (now) => {
+      const elapsed = now - startedAt;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = easeOutBack(t);
+      setOffset(finalOffset * eased);
+      if (t < 1) {
+        rafId = requestAnimationFrame(animate);
+      } else {
+        setOffset(finalOffset); // 정확히 당첨 칸에 고정
+      }
+    };
+
+    rafId = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(rafId);
+  }, [finalOffset]);
+
+  return (
+    <div style={{ height: `${CELL_H}px`, overflow: "hidden", position: "relative" }}>
+      <div
+        style={{
+          transform: `translateY(${-offset}px)`,
+          willChange: "transform",
+        }}
+      >
+        {reel.map((song, i) => (
+          <ReelCell key={i} song={song} height={CELL_H} />
+        ))}
       </div>
     </div>
   );
