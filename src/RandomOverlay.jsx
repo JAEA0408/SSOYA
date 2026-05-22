@@ -161,7 +161,7 @@ export default function RandomOverlay() {
     window.setTimeout(() => {
       setResult(song);
       setRunning(false);
-    }, 5000);
+    }, 4000);
   }, []);
 
   // 버튼/키 입력 → 곡을 뽑아서 Firebase에 신호만 기록 (직접 안 돌림)
@@ -400,7 +400,7 @@ function ReelCell({ song, height }) {
 
 function RollingSlot({ songs, winner }) {
   const CELL_H = 190;       // 한 칸 높이
-  const SPIN_COUNT = 18;    // 흐르는 칸 개수 (당첨 칸 전까지)
+  const SPIN_COUNT = 11;    // 흐르는 칸 개수 (당첨 칸 전까지)
   const BUFFER = 2;         // 당첨 칸 뒤 여분 칸 (반동용)
   const [offset, setOffset] = useState(0);
 
@@ -422,7 +422,7 @@ function RollingSlot({ songs, winner }) {
   useEffect(() => {
     let rafId;
     const startedAt = performance.now();
-    const duration = 5000;
+    const duration = 4000;
     const overshoot = CELL_H * 0.5; // 반동 크기 (반 칸 정도 넘어갔다 복귀)
 
     // 거의 일정 속도로 흐르다 끝에서 살짝 감속 + 부드럽게 이어지는 반동.
