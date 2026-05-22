@@ -166,18 +166,24 @@ export default function RandomOverlay() {
   const requestRandom = useCallback(() => {
     if (sortedSongs.length === 0 || running) return;
     const chosen = sortedSongs[Math.floor(Math.random() * sortedSongs.length)];
-    triggerRandom(chosen.id);
+    console.log("[SSOYA] 신호 보내는 중:", chosen.id, chosen.title);
+    triggerRandom(chosen.id)
+      .then(() => console.log("[SSOYA] 신호 전송 성공"))
+      .catch((e) => console.error("[SSOYA] 신호 전송 실패:", e));
   }, [running, sortedSongs]);
 
   // Firebase 신호 감시 → 신호 오면 양쪽 화면이 동시에 같은 곡으로 슬롯 돌림
   const lastNonceRef = useRef(null);
   useEffect(() => {
+    console.log("[SSOYA] 신호 감시 시작");
     const unsubscribe = listenRandomTrigger(({ songId, nonce }) => {
+      console.log("[SSOYA] 신호 수신:", songId, "nonce:", nonce, "이전:", lastNonceRef.current);
       if (lastNonceRef.current === nonce) return; // 같은 신호 중복 방지
       lastNonceRef.current = nonce;
       if (runningRef.current) return; // 이미 돌고 있으면 무시
       const list = sortedSongsRef.current;
       const song = list.find((s) => s.id === songId);
+      console.log("[SSOYA] 곡 찾음?:", song ? song.title : "못찾음 (목록 " + list.length + "곡)");
       if (song) runSlot(song);
     });
     return () => unsubscribe();
