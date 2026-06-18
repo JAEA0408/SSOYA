@@ -401,7 +401,7 @@ function ReelCell({ song, height }) {
 function RollingSlot({ songs, winner }) {
   const CELL_H = 190;       // 한 칸 높이
   const SPIN_COUNT = 11;    // 흐르는 칸 개수 (당첨 칸 전까지)
-  const BUFFER = 4;         // 당첨 칸 뒤 여분 칸 (반동용)
+  const BUFFER = 4;         // 당첨 칸 뒤 여분 칸 (지나칠 때 보일 칸)
   const [offset, setOffset] = useState(0);
 
   // 릴 시퀀스: 랜덤곡 SPIN_COUNT개 + 당첨곡 + 여분 랜덤곡 BUFFER개
@@ -423,32 +423,38 @@ function RollingSlot({ songs, winner }) {
     let rafId;
     const startedAt = performance.now();
     const duration = 4000;
-    const overshoot = CELL_H * 1.1; // 반동 크기 (당첨 칸을 1.1칸 지나침)
-    const peakOffset = finalOffset + overshoot; // 가장 많이 지나친 지점
 
-    // 릴 평균 속도(픽셀/ms). 넘어가는 구간을 이 속도에 맞춤
-    const reelSpeed = peakOffset / duration;
-    // 되돌아오는 데 쓸 시간 비율 (전체의 마지막 18%)
-    const returnRatio = 0.18;
-    const goEnd = 1 - returnRatio; // 넘어가기 끝나는 시점(비율)
+    // 이번 회차에 멈추는 방식을 50:50으로 무작위 선택
+    //   true  → 당첨 칸을 살짝 지나쳤다가 되돌아와 멈춤
+    //   false → 당첨 칸을 지나치지 않고 그대로 부드럽게 멈춤
+    const isOvershoot = Math.random() < 0.5;
 
-    // 넘어가는 구간: 거의 일정 속도(약한 감속), peakOffset까지 도달
+    // 거의 일정한 속도로 돌다가 끝에서 부드럽게 감속 (속도가 0으로 안착)
     const easeOutSine = (x) => Math.sin((x * Math.PI) / 2);
+
+    // 지나치는 방식에서만 쓰는 값
+    const overshoot = CELL_H * 0.6;             // 지나치는 양 (약 0.6칸, 클수록 많이 지나침)
+    const peakOffset = finalOffset + overshoot; // 가장 많이 지나친 지점
+    const returnRatio = 0.2;                    // 마지막 20% 시간 동안 되돌아옴
+    const goEnd = 1 - returnRatio;
 
     const animate = (now) => {
       const elapsed = now - startedAt;
       const t = Math.min(elapsed / duration, 1);
 
       let pos;
-      if (t <= goEnd) {
-        // 1단계: peakOffset까지 일정 속도로 넘어감 (릴 속도 유지)
-        const tt = t / goEnd; // 0→1
-        pos = peakOffset * easeOutSine(tt);
+      if (!isOvershoot) {
+        // [안 지나침] 거의 등속으로 흐르다 당첨 칸에 부드럽게 정지
+        pos = finalOffset * easeOutSine(t);
+      } else if (t <= goEnd) {
+        // [지나침-1단계] 당첨 칸을 지나쳐 peakOffset까지 흐름 (정점에서 속도 0)
+        pos = peakOffset * easeOutSine(t / goEnd);
       } else {
-        // 2단계: peakOffset에서 finalOffset으로 부드럽게 되돌아옴
-        const tt = (t - goEnd) / returnRatio; // 0→1
-        const easeBack = 1 - Math.pow(1 - tt, 2); // 빠르게 시작해 천천히 안착
-        pos = peakOffset - overshoot * easeBack;
+        // [지나침-2단계] peakOffset에서 당첨 칸으로 부드럽게 되돌아옴
+        //   복귀 속도가 0에서 시작해 0으로 끝나므로 갑자기 빨라지지 않음
+        const tt = (t - goEnd) / returnRatio;             // 0→1
+        const settle = (1 - Math.cos(Math.PI * tt)) / 2;  // 0→1, 양 끝 속도 0
+        pos = peakOffset - overshoot * settle;
       }
 
       setOffset(pos);
